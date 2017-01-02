@@ -3,7 +3,7 @@
 
 The use of dropmenu is like snapseed.
 
-Only update some filter.
+Only update some filters.
 
 Repository is in the update.
   
