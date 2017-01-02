@@ -13,7 +13,8 @@
 #import <math.h>
 #define FilterCellWidth 120
 #define MoveZoom 20
-
+#define TabbarHeight 40
+NSString * const cellId = @"FilterCell";
 
 typedef NS_ENUM(NSInteger, ColorFilterType) {
     SaturationFilter = 101,
@@ -28,7 +29,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     ModTransition
 };
 
-@interface ViewController () <SnapseedDropMenuDelegate>{
+@interface ViewController () <SnapseedDropMenuDelegate,UICollectionViewDelegate, UICollectionViewDataSource>{
     BOOL _change;
     UIActivityIndicatorView * _activityIndicator;
     dispatch_queue_t _serialQueue;
@@ -37,13 +38,15 @@ typedef NS_ENUM(NSInteger, FilterType) {
 @property (nonatomic, strong) UIImageView * imageView;
 @property (nonatomic, strong) CALayer * imgLayer;
 @property (nonatomic, strong) UIImage * img;
-
+@property (nonatomic, strong) UIView * gestureView;
 @property (nonatomic, strong) MBProgressHUD *tipHud;
 @property (nonatomic, strong) UIScrollView * tabScrollView;
 @property (nonatomic, strong) SnapseedDropMenu * menu;
 @property (nonatomic, strong) UILabel * selectFilterNameLab;
 @property (nonatomic, copy) NSArray * colorFilterArray;
+@property (nonatomic, copy) NSArray * tabbarFilterArray;
 @property (nonatomic, strong) NSMutableArray<NSNumber *> * colorFilterValueArray;
+@property (nonatomic, strong) UICollectionView * collectionView;
 @end
 
 @implementation ViewController
@@ -78,34 +81,21 @@ typedef NS_ENUM(NSInteger, FilterType) {
     self.imageView.y = SCREEN_HEIGHT / 6;
     [self.view addSubview:self.imageView];
     
-    self.imgLayer = [CALayer layer];
-    _tabScrollView = [[UIScrollView alloc]initWithFrame:CGRectMake(0, SCREEN_HEIGHT - 60, SCREEN_WIDTH, 60)];
-    [self.view addSubview:_tabScrollView];
     
-    //Filter button:
-    CGFloat offsetX = 10;
+    UICollectionViewFlowLayout * layout = [[UICollectionViewFlowLayout alloc]init];
+    layout.scrollDirection = UICollectionViewScrollDirectionVertical;
+    layout.itemSize = CGSizeMake(SCREEN_WIDTH / self.tabbarFilterArray.count - 20, TabbarHeight - 10);
+    
+    self.collectionView = [[UICollectionView alloc]initWithFrame:CGRectMake(0, SCREEN_HEIGHT - TabbarHeight, SCREEN_WIDTH, TabbarHeight) collectionViewLayout:layout];
+    self.collectionView.delegate = self;
+    self.collectionView.dataSource = self;
+    [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:cellId];
+    self.collectionView.backgroundColor = HEX_RGBA(0xdddddd,0.50);
+    self.collectionView.contentInset = UIEdgeInsetsMake(5, 10, 5, 10);
+    self.collectionView.scrollEnabled = YES;
+    [self.view addSubview:self.collectionView];
+    
  
-    UIButton * gaussianBlurbtn = [self getFilterButton:offsetX  buttonTitle:@"GaussianBlur" buttonType:GaussianBlur];
-    [_tabScrollView addSubview:gaussianBlurbtn];
-    
-    
-    offsetX += FilterCellWidth + 10;
-    
-    UIButton * sepiaTonebtn = [self getFilterButton:offsetX buttonTitle:@"SepiaTone" buttonType:SepiaTone];
-    [_tabScrollView addSubview:sepiaTonebtn];
-    
-    offsetX += FilterCellWidth + 10;
-    
-    UIButton * affinetransfromBtn = [self getFilterButton:offsetX buttonTitle:@"放大一倍" buttonType:AffineTransform];
-    [_tabScrollView addSubview:affinetransfromBtn];
-    
-    offsetX += FilterCellWidth + 10;
-    UIButton * modTransitionBtn = [self getFilterButton:offsetX buttonTitle:@"CIAffineTransform" buttonType:ModTransition];
-    [_tabScrollView addSubview:modTransitionBtn];
-    
-    offsetX += FilterCellWidth + 10;
-
-    _tabScrollView.contentSize = CGSizeMake(offsetX, 60);
     
     self.selectFilterNameLab = [[UILabel alloc]  initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, NAV_VIEW_HEIGHT + 30)];
     self.selectFilterNameLab.textColor = [UIColor whiteColor];
@@ -113,37 +103,74 @@ typedef NS_ENUM(NSInteger, FilterType) {
     self.selectFilterNameLab.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:self.selectFilterNameLab];
     
-    //Snapseed menu
+    self.gestureView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, self.collectionView.y)];
+    [self.view addSubview:self.gestureView];
     
-    self.colorFilterArray = @[@"饱和度",@"亮  度",@"对比度"];
+    
+    //Snapseed menu
     _colorFilterValueArray = [NSMutableArray arrayWithCapacity:_colorFilterArray.count];
     CGPoint point = CGPointMake(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
-    self.menu = [[SnapseedDropMenu alloc]initWithArray:self.colorFilterArray  viewCenterPoint:point inView:self.view];
+    self.menu = [[SnapseedDropMenu alloc]initWithArray:self.colorFilterArray  viewCenterPoint:point inView:self.gestureView];
     self.menu.dropMenuDelegate = self;
     [self.view addSubview:self.menu];
+    
+    
 }
-
-
-- (UIButton *) getFilterButton:(CGFloat)offsetX buttonTitle:(NSString *)title buttonType:(FilterType)type{
-    UIButton * btn = [UIButton buttonWithType:UIButtonTypeCustom];
-    [btn setTitle:title forState:UIControlStateNormal];
-    [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    btn.layer.borderColor = [UIColor whiteColor].CGColor;
-    btn.layer.borderWidth = 1;
-    btn.tag = type;
-    btn.frame = CGRectMake(offsetX, 5, FilterCellWidth, 50);
-    [btn addTarget:self action:@selector(buttonAction:) forControlEvents:UIControlEventTouchUpInside];
-    return btn;
-}
-
 
 - (void) initData {
     _change = YES;
     _serialQueue = dispatch_queue_create("com.gcd.concurrentQueue", DISPATCH_QUEUE_SERIAL);
     _colorFilter = [CIFilter filterWithName:@"CIColorControls"];
     [_colorFilter setDefaults];
-    _colorFilterValueArray = [NSMutableArray array];
+    
+    self.colorFilterArray = @[@"饱和度",@"亮  度",@"对比度"];
+    self.tabbarFilterArray = @[@"高斯模糊",@"对比色",@"放大一倍"];
 }
+
+#pragma mark CollectionView Delegete
+//返回分区个数
+-(NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView{
+    return 1;
+}
+//返回每个分区的item个数
+-(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
+    return self.tabbarFilterArray.count;
+}
+//返回每个item
+-(UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath{
+    UICollectionViewCell * cell  = [collectionView dequeueReusableCellWithReuseIdentifier:cellId forIndexPath:indexPath];
+    cell.backgroundColor = HEX_RGBA(0x000000,0.80);
+    [cell.contentView removeAllSubviews];
+    UILabel * lab = [[UILabel alloc] initWithFrame:CGRectMake(5, 5, cell.width - 5,12)];
+    lab.text = [self.tabbarFilterArray objectAtIndex:indexPath.row];
+    lab.font = [UIFont fontWithName:@"Helvetica-Bold" size:12];;
+    lab.textAlignment = NSTextAlignmentLeft;
+    lab.textColor = [UIColor whiteColor];
+    [cell addSubview:lab];
+    return cell;
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+    if(_change) {
+        dispatch_async(_serialQueue,^{
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self showLoadingTips];
+            });
+            UIImage * img = [self setFilter:(FilterType)(indexPath.row + 201)];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.imageView setImage:img];
+                [self dismissLoadingTips];
+            });
+        });
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.imageView setImage:self.img];
+        });
+    }
+    _change = !_change;
+}
+
+
 
 #pragma mark SnapseedDropMenu Delegate
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender didSelectCellAtIndex:(NSInteger)index value:(CGFloat)value{
@@ -159,31 +186,6 @@ typedef NS_ENUM(NSInteger, FilterType) {
     NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.f",[self.colorFilterArray objectAtIndex:index],value];
     self.selectFilterNameLab.text = colorFilterName;
 }
-
-
-#pragma mark - Action block
-
-
-- (void)buttonAction:(UIButton *)sender {
-    if(_change) {
-        dispatch_async(_serialQueue,^{
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self showLoadingTips];
-            });
-            UIImage * img = [self setFilter:(FilterType)sender.tag];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self.imageView setImage:img];
-                [self dismissLoadingTips];
-            });
-        });
-    } else {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self.imageView setImage:self.img];
-        });
-    }
-    _change = !_change;
-}
-
 
 #pragma mark - Filter
 
