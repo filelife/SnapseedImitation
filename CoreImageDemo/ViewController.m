@@ -149,15 +149,15 @@ typedef NS_ENUM(NSInteger, FilterType) {
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender didSelectCellAtIndex:(NSInteger)index value:(CGFloat)value{
     NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.f",[self.colorFilterArray objectAtIndex:index],value];
     self.selectFilterNameLab.text = colorFilterName;
-    
-    
 }
 
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender atIndex:(NSInteger)index valueDidChange:(CGFloat)value {
-    
+    [self.imageView setImage:[self setColorFilter:value filterType:(index + 101)]];
+}
+
+- (void)snapseedDropMenu:(SnapseedDropMenu *)sender atIndex:(NSInteger)index isChanging:(CGFloat)value {
     NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.f",[self.colorFilterArray objectAtIndex:index],value];
     self.selectFilterNameLab.text = colorFilterName;
-    [self.imageView setImage:[self setColorFilter:value filterType:(index + 101)]];
 }
 
 
@@ -252,7 +252,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
                 break;
             case SepiaTone: {
                 filter = [CIFilter filterWithName:@"CISepiaTone"
-                                    keysAndValues:@"inputIntensity",@20,
+                                    keysAndValues:@"inputIntensity",@0.9,
                                                   @"inputImage", inputImage,nil];
             }
                 break;
