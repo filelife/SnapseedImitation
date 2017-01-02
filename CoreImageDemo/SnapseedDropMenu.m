@@ -19,9 +19,10 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
     PanGestureRight
 };
 #define MoveZoom 5
-@interface SnapseedDropMenu()<UITableViewDelegate,UITableViewDataSource>
+@interface SnapseedDropMenu()<UITableViewDelegate,UITableViewDataSource> {
+    int * _intValueArray;
+}
 @property (nonatomic, copy)NSArray * dataArray;
-@property (nonatomic, strong) NSMutableArray * valueArray;
 @property (nonatomic, assign) NSInteger selectNum;
 @property (nonatomic, strong) UIView * superView;
 @property (nonatomic, assign) PanGestureDirection lastGestureDirecttion;
@@ -48,11 +49,10 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
     UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGesture:)];
     [_superView addGestureRecognizer:panGesture];
     self.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _intValueArray = (int *)malloc(sizeof(int)*array.count);
     
-    self.valueArray = [NSMutableArray array];
     for(int i = 0; i < _dataArray.count; i++) {
-        NSNumber * num = @0;
-        [self.valueArray addObject:num];
+        _intValueArray[i] = 0;
     }
     
     return self;
@@ -88,7 +88,7 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
         cell.backgroundColor = [UIColor clearColor];
     }
     cell.title.text = title;
-    cell.valueLab.text = @"0";
+    cell.valueLab.text = [NSString stringWithFormat:@"%d",_intValueArray[indexPath.row]];
     if(indexPath.row == _selectNum) {
         cell.mainView.backgroundColor = COLOR_14;
     } else {
@@ -109,10 +109,17 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
         case UIGestureRecognizerStateEnded: {
             if(self.dropMenuDelegate && _gestureLock == UpOrDown) {
                 if([self.dropMenuDelegate respondsToSelector:@selector(snapseedDropMenu:didSelectCellAtIndex:value:)]) {
-                    NSNumber * value = [self.valueArray objectAtIndex:(NSUInteger)_selectNum];
-                    [self.dropMenuDelegate snapseedDropMenu:self didSelectCellAtIndex:_selectNum value:value.floatValue];
+                    [self.dropMenuDelegate snapseedDropMenu:self
+                                       didSelectCellAtIndex:_selectNum
+                                                      value:_intValueArray[_selectNum]];
+                }
+            } else if(self.dropMenuDelegate && _gestureLock == LeftOrRight) {
+                if([self.dropMenuDelegate respondsToSelector:@selector(snapseedDropMenu:atIndex:valueDidChange:)]) {
+                    [self.dropMenuDelegate snapseedDropMenu:self atIndex:_selectNum valueDidChange:_intValueArray[_selectNum]];
                 }
             }
+            
+            
             self.hidden = YES;
             _gestureLock = NoGestureDirection;
         }
@@ -146,9 +153,16 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
         
     } else if(_gestureLock == LeftOrRight ){
         //锁定当前滑动为左右滑动
+        if(_intValueArray[_selectNum] + movePoint.x > 100) {
+            _intValueArray[_selectNum] = 100;
+        } else if(_intValueArray[_selectNum] + movePoint.x < -100) {
+            _intValueArray[_selectNum] = -100;
+        } else {
+            _intValueArray[_selectNum] += movePoint.x;
+        }
         if(self.dropMenuDelegate) {
-            if([self.dropMenuDelegate respondsToSelector:@selector(snapseedDropMenu: atIndex:valueDidChange:)]) {
-                [self.dropMenuDelegate snapseedDropMenu:self atIndex:_selectNum valueDidChange:movePoint.x];
+            if([self.dropMenuDelegate respondsToSelector:@selector(snapseedDropMenu: atIndex:isChanging:)]) {
+                [self.dropMenuDelegate snapseedDropMenu:self atIndex:_selectNum isChanging:_intValueArray[_selectNum]];
             }
         }
         

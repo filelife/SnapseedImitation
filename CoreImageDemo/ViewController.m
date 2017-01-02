@@ -15,10 +15,10 @@
 #define MoveZoom 20
 
 
-typedef NS_ENUM(NSInteger, SliderType) {
-    SaturationSlider = 101,
-    BrightnessSlider,
-    ContrastSlider
+typedef NS_ENUM(NSInteger, ColorFilterType) {
+    SaturationFilter = 101,
+    BrightnessFilter,
+    ContrastFilter
 };
 
 typedef NS_ENUM(NSInteger, FilterType) {
@@ -33,7 +33,6 @@ typedef NS_ENUM(NSInteger, FilterType) {
     UIActivityIndicatorView * _activityIndicator;
     dispatch_queue_t _serialQueue;
     CIFilter * _colorFilter;
-    int filterValue[5];
 }
 @property (nonatomic, strong) UIImageView * imageView;
 @property (nonatomic, strong) CALayer * imgLayer;
@@ -54,9 +53,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     
     [self initData];
     [self initUI];
-    
-    
-    //添加拖动手势
+
 }
 
 
@@ -107,18 +104,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     [_tabScrollView addSubview:modTransitionBtn];
     
     offsetX += FilterCellWidth + 10;
-    
-//    //Filter slider
-//    CGFloat sliderOffsetY = 380;
-//    
-//    [self addColorControlSlider:SaturationSlider withOffsetY:sliderOffsetY labName:@"饱和度" withMin:0 andMax:2 andValue:1];
-//    sliderOffsetY += 60;
-//    
-//    [self addColorControlSlider:BrightnessSlider withOffsetY:sliderOffsetY labName:@"亮 度" withMin:-1 andMax:1 andValue:0];
-//    sliderOffsetY += 60;
-//    
-//    [self addColorControlSlider:ContrastSlider withOffsetY:sliderOffsetY labName:@"对比度" withMin:0 andMax:2 andValue:1];
-    
+
     _tabScrollView.contentSize = CGSizeMake(offsetX, 60);
     
     self.selectFilterNameLab = [[UILabel alloc]  initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, NAV_VIEW_HEIGHT + 30)];
@@ -128,7 +114,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
     [self.view addSubview:self.selectFilterNameLab];
     
     //Snapseed menu
-    self.colorFilterArray = @[@"饱和度",@"亮  度",@"对比度",@"阴  影",@"高  亮"];
+    
+    self.colorFilterArray = @[@"饱和度",@"亮  度",@"对比度"];
     _colorFilterValueArray = [NSMutableArray arrayWithCapacity:_colorFilterArray.count];
     CGPoint point = CGPointMake(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     self.menu = [[SnapseedDropMenu alloc]initWithArray:self.colorFilterArray  viewCenterPoint:point inView:self.view];
@@ -136,25 +123,6 @@ typedef NS_ENUM(NSInteger, FilterType) {
     [self.view addSubview:self.menu];
 }
 
-
-
-
-- (void) addColorControlSlider:(SliderType)type withOffsetY:(CGFloat)offsetY labName:(NSString *)name withMin:(CGFloat)min andMax:(CGFloat)max andValue:(CGFloat)value{
- 
-    UILabel * silderLab = [[UILabel alloc]initWithFrame:CGRectMake(30, offsetY, 70, 20)];
-    silderLab.text = name;
-    [self.view addSubview:silderLab];
-    
-    UISlider * silder;
-    silder = [[UISlider alloc]initWithFrame:CGRectMake(100, offsetY, 180, 30)];
-    silder.continuous = NO;
-    silder.minimumValue = min;// 设置最小值
-    silder.maximumValue = max;// 设置最大值
-    silder.value = value;
-    silder.tag = type;
-    [silder addTarget:self action:@selector(sliderValueChange:) forControlEvents:UIControlEventValueChanged];
-    [self.view addSubview:silder];
-}
 
 - (UIButton *) getFilterButton:(CGFloat)offsetX buttonTitle:(NSString *)title buttonType:(FilterType)type{
     UIButton * btn = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -179,59 +147,22 @@ typedef NS_ENUM(NSInteger, FilterType) {
 
 #pragma mark SnapseedDropMenu Delegate
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender didSelectCellAtIndex:(NSInteger)index value:(CGFloat)value{
-    NSString * colorFilterName = [NSString stringWithFormat:@"%@  %d",[self.colorFilterArray objectAtIndex:index],filterValue[index]];
+    NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.f",[self.colorFilterArray objectAtIndex:index],value];
     self.selectFilterNameLab.text = colorFilterName;
+    
+    
 }
 
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender atIndex:(NSInteger)index valueDidChange:(CGFloat)value {
-    if(filterValue[index] > 100){
-        filterValue[index] = 100;
-    } else if(filterValue[index] < -100) {
-        filterValue[index] = -100;
-    } else {
-        filterValue[index] += value;
-    }
-    NSString * colorFilterName = [NSString stringWithFormat:@"%@  %d",[self.colorFilterArray objectAtIndex:index],filterValue[index]];
+    
+    NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.f",[self.colorFilterArray objectAtIndex:index],value];
     self.selectFilterNameLab.text = colorFilterName;
+    [self.imageView setImage:[self setColorFilter:value filterType:(index + 101)]];
 }
 
 
 #pragma mark - Action block
 
-- (void)sliderValueChange:(id)sender {
-    UISlider * slider;
-    if([sender isKindOfClass:[UISlider class]]) {
-        slider = (UISlider *)sender;
-    }
-    __weak ViewController *weakself = self;
-    if(slider.tag == SaturationSlider) {
-        dispatch_async(_serialQueue,^{
-            UIImage * img = [weakself setStaturation:[NSNumber numberWithFloat:slider.value]];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [weakself.imageView setImage:img];
-                
-            });
-        });
-    } else if(slider.tag == BrightnessSlider){
-        dispatch_async(_serialQueue,^{
-            UIImage * img = [weakself setBrightness:[NSNumber numberWithFloat:slider.value]];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [weakself.imageView setImage:img];
-                
-            });
-        });
-    } else if(slider.tag == ContrastSlider) {
-        dispatch_async(_serialQueue,^{
-            UIImage * img = [weakself setContrast:[NSNumber numberWithFloat:slider.value]];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [weakself.imageView setImage:img];
-                
-            });
-            
-        });
-    }
-    
-}
 
 - (void)buttonAction:(UIButton *)sender {
     if(_change) {
@@ -264,54 +195,42 @@ typedef NS_ENUM(NSInteger, FilterType) {
     }
 }
 
-- (UIImage *)setStaturation:(NSNumber *)number {
-    if(_colorFilter) {
-        [_colorFilter setValue:number forKey:@"inputSaturation"];
-        CIImage * inputImage;
-        @autoreleasepool {
-            NSData *imageData = UIImagePNGRepresentation(self.img);
-            inputImage = [CIImage imageWithData:imageData];
-            imageData = nil;
-        }
-        [_colorFilter setValue:inputImage forKey:@"inputImage"];
-        return [self useFilter:_colorFilter toCreateImageWiehCIImage:inputImage];
-    } else {
-        return  nil;
+- (UIImage *)setColorFilter:(CGFloat)value filterType:(ColorFilterType)type{
+    if(_colorFilter == nil) {
+        return nil;
     }
-    
-}
-
-- (UIImage *)setBrightness:(NSNumber *)number {
-    if(_colorFilter) {
-        [_colorFilter setValue:number forKey:@"inputBrightness"];
-        CIImage * inputImage;
-        @autoreleasepool {
-            NSData *imageData = UIImagePNGRepresentation(self.img);
-            inputImage = [CIImage imageWithData:imageData];
-            imageData = nil;
-            
+    switch (type) {
+        case SaturationFilter:
+        {
+            CGFloat finalValue = 1 + value / 100;
+            [_colorFilter setValue:[NSNumber numberWithFloat:finalValue] forKey:@"inputSaturation"];
         }
-        [_colorFilter setValue:inputImage forKey:@"inputImage"];
-        return [self useFilter:_colorFilter toCreateImageWiehCIImage:inputImage];
-    } else {
-        return  nil;
-    }
-}
-
-- (UIImage *)setContrast:(NSNumber *)number {
-    if(_colorFilter) {
-        [_colorFilter setValue:number forKey:@"inputContrast"];
-        CIImage * inputImage;
-        @autoreleasepool {
-            NSData *imageData = UIImagePNGRepresentation(self.img);
-            inputImage = [CIImage imageWithData:imageData];
-            imageData = nil;
+            break;
+        case BrightnessFilter:
+        {
+            CGFloat finalValue = value / 100;
+            [_colorFilter setValue:[NSNumber numberWithFloat:finalValue] forKey:@"inputBrightness"];
         }
-        [_colorFilter setValue:inputImage forKey:@"inputImage"];
-        return [self useFilter:_colorFilter toCreateImageWiehCIImage:inputImage];
-    } else {
-        return  nil;
+            break;
+        case ContrastFilter:
+        {
+            CGFloat finalValue = 1 + value / 100;
+            [_colorFilter setValue:[NSNumber numberWithFloat:finalValue] forKey:@"inputContrast"];
+        }
+            break;
+        default:
+        {
+            return nil;
+        }
     }
+    CIImage * inputImage;
+    @autoreleasepool {
+        NSData *imageData = UIImagePNGRepresentation(self.img);
+        inputImage = [CIImage imageWithData:imageData];
+        imageData = nil;
+    }
+    [_colorFilter setValue:inputImage forKey:@"inputImage"];
+    return [self useFilter:_colorFilter toCreateImageWiehCIImage:inputImage];
 }
 
 //滤镜相关代码

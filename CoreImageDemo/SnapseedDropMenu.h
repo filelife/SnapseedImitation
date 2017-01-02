@@ -13,6 +13,7 @@
 @protocol SnapseedDropMenuDelegate<NSObject>
 
 - (void)snapseedDropMenu:(SnapseedDropMenu*)sender didSelectCellAtIndex:(NSInteger)index value:(CGFloat)value;
+- (void)snapseedDropMenu:(SnapseedDropMenu*)sender atIndex:(NSInteger)index isChanging:(CGFloat)value;
 - (void)snapseedDropMenu:(SnapseedDropMenu*)sender atIndex:(NSInteger)index valueDidChange:(CGFloat)value;
 @end
 
