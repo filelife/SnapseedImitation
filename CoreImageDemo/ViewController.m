@@ -29,7 +29,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     ModTransition
 };
 
-@interface ViewController () <SnapseedDropMenuDelegate,UICollectionViewDelegate, UICollectionViewDataSource>{
+@interface ViewController () <SnapseedDropMenuDelegate,UICollectionViewDelegate, UICollectionViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate>{
     BOOL _change;
     UIActivityIndicatorView * _activityIndicator;
     dispatch_queue_t _serialQueue;
@@ -37,7 +37,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
 }
 @property (nonatomic, strong) UIImageView * imageView;
 @property (nonatomic, strong) CALayer * imgLayer;
-@property (nonatomic, strong) UIImage * img;
+@property (nonatomic, strong) UIImage * orignImg;
 @property (nonatomic, strong) UIView * gestureView;
 @property (nonatomic, strong) MBProgressHUD *tipHud;
 @property (nonatomic, strong) UIScrollView * tabScrollView;
@@ -47,6 +47,9 @@ typedef NS_ENUM(NSInteger, FilterType) {
 @property (nonatomic, copy) NSArray * tabbarFilterArray;
 @property (nonatomic, strong) NSMutableArray<NSNumber *> * colorFilterValueArray;
 @property (nonatomic, strong) UICollectionView * collectionView;
+@property (nonatomic, strong) UIButton * leftbtn;
+@property (nonatomic, strong) UIButton * rightbtn;
+@property (nonatomic, strong) UIImagePickerController *picker;
 @end
 
 @implementation ViewController
@@ -66,14 +69,13 @@ typedef NS_ENUM(NSInteger, FilterType) {
 }
 
 - (void) initUI {
-    
     self.view.backgroundColor = BACKGROUNDCOLOR;
     //loading tip
     _tipHud = [[MBProgressHUD alloc] initWithView:self.view];
     [self.view addSubview:_tipHud];
     // Pic
-    self.img = [UIImage imageNamed:@"Duck.jpg"];
-    self.imageView = [[UIImageView alloc]initWithImage:self.img];
+    
+    self.imageView = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"Duck.jpg"]];
     self.imageView.width = SCREEN_WIDTH - 30;
     self.imageView.height = SCREEN_HEIGHT / 3 * 2;
     self.imageView.contentMode = UIViewContentModeScaleAspectFit;
@@ -81,6 +83,20 @@ typedef NS_ENUM(NSInteger, FilterType) {
     self.imageView.y = SCREEN_HEIGHT / 6;
     [self.view addSubview:self.imageView];
     
+    
+    self.leftbtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    self.leftbtn.frame = CGRectMake(0, 30, 100, 30);
+    [self.leftbtn setTitle:@"保存" forState:UIControlStateNormal];
+    [self.leftbtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [self.leftbtn addTarget:self action:@selector(saveImage:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:self.leftbtn];
+    
+    self.rightbtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    self.rightbtn.frame = CGRectMake(SCREEN_WIDTH - 100, 30, 100, 30);
+    [self.rightbtn setTitle:@"打开" forState:UIControlStateNormal];
+    [self.rightbtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [self.rightbtn addTarget:self action:@selector(openAlbum:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:self.rightbtn];
     
     UICollectionViewFlowLayout * layout = [[UICollectionViewFlowLayout alloc]init];
     layout.scrollDirection = UICollectionViewScrollDirectionVertical;
@@ -103,7 +119,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
     self.selectFilterNameLab.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:self.selectFilterNameLab];
     
-    self.gestureView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, self.collectionView.y)];
+    self.gestureView = [[UIView alloc]initWithFrame:CGRectMake(0, 60, SCREEN_WIDTH, self.collectionView.y - 60)];
+    
     [self.view addSubview:self.gestureView];
     
     
@@ -127,7 +144,66 @@ typedef NS_ENUM(NSInteger, FilterType) {
     self.tabbarFilterArray = @[@"高斯模糊",@"对比色",@"放大一倍"];
 }
 
-#pragma mark CollectionView Delegete
+#pragma mark button action block
+- (void)openAlbum:(UIButton *)sender {
+    self.picker = [[UIImagePickerController alloc] init];
+    [self settingGeneralProperty];
+    [self presentViewController:self.picker animated:YES completion:nil];
+
+}
+
+- (void)saveImage:(UIButton *)sender {
+
+}
+
+#pragma mark UIImagePicker Delegate
+- (void)settingGeneralProperty {
+    /**
+        *  图片源, 运行相关接口前需要指明源类型.必须有效,否则抛出异常. picker已经显示的时候改变这个值,picker会相应改变来适应.
+         UIImagePickerControllerSourceTypePhotoLibrary ,//来自图库
+         UIImagePickerControllerSourceTypeCamera ,//来自相机
+         UIImagePickerControllerSourceTypeSavedPhotosAlbum //来自相册
+         */
+    _picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    // 指示picker中显示的媒体类型.设置每种类型之前应用availableMediaTypesForSourceType:检查一下.如果为空或者array中类型都不可用,会发生异常.默认 kUTTypeImage, 只能显示图片.
+    _picker.mediaTypes = [UIImagePickerController availableMediaTypesForSourceType:UIImagePickerControllerSourceTypeSavedPhotosAlbum];
+
+    //是否允许编辑,默认 NO
+    _picker.allowsEditing = YES;
+    
+    //是否支持某种图片源
+//    BOOL isAvailable = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypePhotoLibrary];
+    //支持某种图片源的媒体类型
+//    NSArray *sourceArr = [UIImagePickerController availableMediaTypesForSourceType:UIImagePickerControllerSourceTypeCamera];
+    _picker.delegate = self;
+}
+
+-(void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info {
+    NSLog(@"已经完成");
+    /*
+         info 中的 key 对应的内容
+         UIImagePickerControllerMediaType       //用户选择的媒体类型
+         UIImagePickerControllerOriginalImage   //原始图片
+         UIImagePickerControllerEditedImage     //修改后的图片
+         UIImagePickerControllerCropRect        //裁剪尺寸
+         UIImagePickerControllerMediaURL        //媒体的URL
+         UIImagePickerControllerReferenceURL    //原始的URL
+         UIImagePickerControllerMediaMetadata   //从相机获取的数据源
+         UIImagePickerControllerLivePhoto       // a PHLivePhoto
+     */
+    UIImage * pickerImg = [info objectForKey:UIImagePickerControllerEditedImage];
+    self.orignImg = pickerImg;
+    self.imageView.image = pickerImg;
+    [_picker dismissViewControllerAnimated:YES completion:nil];
+    
+}
+-(void)imagePickerControllerDidCancel:(UIImagePickerController *)picker {
+    NSLog(@"已经取消");
+    [_picker dismissViewControllerAnimated:YES completion:nil];
+}
+
+
+#pragma mark CollectionView Delegate
 //返回分区个数
 -(NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView{
     return 1;
@@ -164,7 +240,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
         });
     } else {
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self.imageView setImage:self.img];
+            self.imageView.image = self.orignImg;
         });
     }
     _change = !_change;
@@ -227,9 +303,10 @@ typedef NS_ENUM(NSInteger, FilterType) {
     }
     CIImage * inputImage;
     @autoreleasepool {
-        NSData *imageData = UIImagePNGRepresentation(self.img);
+        NSData *imageData = UIImagePNGRepresentation(self.orignImg);
         inputImage = [CIImage imageWithData:imageData];
         imageData = nil;
+        
     }
     [_colorFilter setValue:inputImage forKey:@"inputImage"];
     return [self useFilter:_colorFilter toCreateImageWiehCIImage:inputImage];
@@ -242,7 +319,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     __weak id weakSelf = self;
     @autoreleasepool {
         
-        NSData *imageData = UIImagePNGRepresentation(((ViewController *)weakSelf).img);
+        NSData *imageData = UIImagePNGRepresentation(((ViewController *)weakSelf).orignImg);
         CIImage * inputImage = [CIImage imageWithData:imageData];
         CIFilter * filter;
         switch (type) {
@@ -259,7 +336,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
             }
                 break;
             case AffineTransform: {
-                CGFloat width = self.img.size.width;
+                CGFloat width = self.imageView.image.size.width;
                 CGAffineTransform trans = CGAffineTransformMake(3, 0, 0, 3, - width,  - width);
                 filter = [CIFilter filterWithName:@"CIAffineTransform"
                                     keysAndValues:@"inputImage",inputImage,
@@ -268,7 +345,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
                 break;
             case ModTransition: {
                 filter = [CIFilter filterWithName: @"CIModTransition"
-                                    keysAndValues: @"inputCenter",[CIVector vectorWithX:0.5*self.img.size.width Y:0.5 * self.img.size.height],
+                                    keysAndValues: @"inputCenter",[CIVector vectorWithX:0.5*self.orignImg.size.width Y:0.5 * self.orignImg.size.height],
                                                    @"inputAngle", @(M_PI*0.1),
                                                    @"inputRadius", @30.0,
                                                    @"inputCompression", @10.0,
