@@ -11,6 +11,9 @@ UI:
  
 <img src="http://p1.bpimg.com/567571/f1e3172f0464087d.png" width = "50%"/>
 
+Edit Photo
+
+<img src="http://p1.bpimg.com/567571/5724739983b0d1a1.jpg" width = "50%"/>
 
 Gaussian Blur filter:
 
