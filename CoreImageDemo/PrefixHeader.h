@@ -3,33 +3,29 @@
 //  CoreImageDemo
 //
 //  Created by Gejiaxin on 16/12/28.
-//  Copyright © 2016年 VincentJac. All rights reserved.
+//  Copyright © 2016 VincentJac. All rights reserved.
 //
 
 #ifndef PrefixHeader_pch
 #define PrefixHeader_pch
 
-//UI用宏定义
+
 #define SnapseedDropMenuCellHeight 45
 #define SnapseedDropMenuCellWidth 200
-//宏定义表：
-#pragma mark - 常用尺寸
+
+#pragma mark - ScreenSize
 #define SCREEN_WIDTH ([UIScreen mainScreen].bounds.size.width)
 #define SCREEN_HEIGHT ([UIScreen mainScreen].bounds.size.height)
-#define NAV_VIEW_HEIGHT 44.0f           //顶部导航栏视图的高(baseview)
+#define NAV_VIEW_HEIGHT 44.0f
 
-#pragma mark - 手机型号判断
+#pragma mark - Model Version
 #define IS_IPHONE4 (([[UIScreen mainScreen] bounds].size.height == 480) ? YES : NO)
 #define IS_IPHONE5 (([[UIScreen mainScreen] bounds].size.height == 568) ? YES : NO)
 #define IS_IPHONE6 (([[UIScreen mainScreen] bounds].size.width == 375) ? YES : NO)
 #define IS_IPHONE6P (([[UIScreen mainScreen] bounds].size.width == 414) ? YES : NO)
 
-#pragma mark - 时间
-#define CS_DATE_FORMAT_YYYY_MM_DD                                      @"yyyy-MM-dd"
-#define CS_DATE_FORMAT_LONG                                            @"yyyy年MM月dd日 E"
-#define CS_DATE_FORMAT_YMDHMS                                          @"yyyy-MM-dd HH:mm:ss"
 
-#pragma mark - 系统版本
+#pragma mark - Sys version
 #define IOS_VERSION [[[UIDevice currentDevice] systemVersion] floatValue]
 #define CurrentSystemVersion ([[UIDevice currentDevice] systemVersion])
 #define HEX_RGBA(s,a) [UIColor colorWithRed:(((s & 0xFF0000) >> 16))/255.0 green:(((s &0xFF00) >>8))/255.0 blue:((s & 0xFF))/255.0 alpha:a]

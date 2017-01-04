@@ -3,7 +3,7 @@
 //  CoreImageDemo
 //
 //  Created by Gejiaxin on 16/12/25.
-//  Copyright © 2016年 VincentJac. All rights reserved.
+//  Copyright © 2016 VincentJac. All rights reserved.
 //
 
 #import "ViewController.h"
@@ -87,14 +87,14 @@ typedef NS_ENUM(NSInteger, FilterType) {
     
     self.leftbtn = [UIButton buttonWithType:UIButtonTypeCustom];
     self.leftbtn.frame = CGRectMake(0, 30, 100, 30);
-    [self.leftbtn setTitle:@"保存" forState:UIControlStateNormal];
+    [self.leftbtn setTitle:@"Save" forState:UIControlStateNormal];
     [self.leftbtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     [self.leftbtn addTarget:self action:@selector(saveImage:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:self.leftbtn];
     
     self.rightbtn = [UIButton buttonWithType:UIButtonTypeCustom];
     self.rightbtn.frame = CGRectMake(SCREEN_WIDTH - 100, 30, 100, 30);
-    [self.rightbtn setTitle:@"打开" forState:UIControlStateNormal];
+    [self.rightbtn setTitle:@"Open" forState:UIControlStateNormal];
     [self.rightbtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     [self.rightbtn addTarget:self action:@selector(openAlbum:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:self.rightbtn];
@@ -141,8 +141,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
     _colorFilter = [CIFilter filterWithName:@"CIColorControls"];
     [_colorFilter setDefaults];
     
-    self.colorFilterArray = @[@"饱和度",@"亮  度",@"对比度"];
-    self.tabbarFilterArray = @[@"高斯模糊",@"对比色",@"放大一倍"];
+    self.colorFilterArray = @[@"Saturation",@"Brightness",@"Contrast"];
+    self.tabbarFilterArray = @[@"Gaussian",@"Old photo",@"Enlargement"];
 }
 
 #pragma mark button action block
@@ -154,12 +154,12 @@ typedef NS_ENUM(NSInteger, FilterType) {
 }
 
 - (void)saveImage:(UIButton *)sender {
-    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"提示" message:@"保存图片到相册" preferredStyle:(UIAlertControllerStyleAlert)];
-    // 创建按钮
-    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"确定" style:(UIAlertActionStyleDefault) handler:^(UIAlertAction *action) {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Message" message:@"Save photo?" preferredStyle:(UIAlertControllerStyleAlert)];
+    
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"YES" style:(UIAlertActionStyleDefault) handler:^(UIAlertAction *action) {
         [self saveEditImage];
     }];
-    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"取消" style:(UIAlertActionStyleCancel) handler:^(UIAlertAction *action) {
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:(UIAlertActionStyleCancel) handler:^(UIAlertAction *action) {
         
         
     }];
@@ -188,63 +188,54 @@ typedef NS_ENUM(NSInteger, FilterType) {
 
 
 - (void)settingGeneralProperty {
-    /**
-        *  图片源, 运行相关接口前需要指明源类型.必须有效,否则抛出异常. picker已经显示的时候改变这个值,picker会相应改变来适应.
-         UIImagePickerControllerSourceTypePhotoLibrary ,//来自图库
-         UIImagePickerControllerSourceTypeCamera ,//来自相机
-         UIImagePickerControllerSourceTypeSavedPhotosAlbum //来自相册
-         */
+    /*
+        UIImagePickerControllerSourceTypePhotoLibrary
+        UIImagePickerControllerSourceTypeCamera
+        UIImagePickerControllerSourceTypeSavedPhotosAlbum
+     */
     _picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
-    // 指示picker中显示的媒体类型.设置每种类型之前应用availableMediaTypesForSourceType:检查一下.如果为空或者array中类型都不可用,会发生异常.默认 kUTTypeImage, 只能显示图片.
     _picker.mediaTypes = [UIImagePickerController availableMediaTypesForSourceType:UIImagePickerControllerSourceTypeSavedPhotosAlbum];
-
-    //是否允许编辑,默认 NO
     _picker.allowsEditing = YES;
-    
-    //是否支持某种图片源
-//    BOOL isAvailable = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypePhotoLibrary];
-    //支持某种图片源的媒体类型
-//    NSArray *sourceArr = [UIImagePickerController availableMediaTypesForSourceType:UIImagePickerControllerSourceTypeCamera];
     _picker.delegate = self;
 }
 
 -(void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info {
-    NSLog(@"已经完成");
+    
     /*
-         info 中的 key 对应的内容
-         UIImagePickerControllerMediaType       //用户选择的媒体类型
-         UIImagePickerControllerOriginalImage   //原始图片
-         UIImagePickerControllerEditedImage     //修改后的图片
-         UIImagePickerControllerCropRect        //裁剪尺寸
-         UIImagePickerControllerMediaURL        //媒体的URL
-         UIImagePickerControllerReferenceURL    //原始的URL
-         UIImagePickerControllerMediaMetadata   //从相机获取的数据源
+         info   key
+         UIImagePickerControllerMediaType
+         UIImagePickerControllerOriginalImage
+         UIImagePickerControllerEditedImage
+         UIImagePickerControllerCropRect
+         UIImagePickerControllerMediaURL
+         UIImagePickerControllerReferenceURL
+         UIImagePickerControllerMediaMetadata
          UIImagePickerControllerLivePhoto       // a PHLivePhoto
      */
     UIImage * pickerImg = [info objectForKey:UIImagePickerControllerEditedImage];
     self.orignImg = pickerImg;
     self.imageView.image = pickerImg;
-    NSData *dataEdited = UIImageJPEGRepresentation(self.imageView.image, 0.3);
-
+    //Compression Quality
+//    NSData *dataEdited = UIImageJPEGRepresentation(self.imageView.image, 0.3);
     [_picker dismissViewControllerAnimated:YES completion:nil];
     
 }
 -(void)imagePickerControllerDidCancel:(UIImagePickerController *)picker {
-    NSLog(@"已经取消");
+    NSLog(@"Cancel");
     [_picker dismissViewControllerAnimated:YES completion:nil];
 }
 
 
 #pragma mark CollectionView Delegate
-//返回分区个数
+
 -(NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView{
     return 1;
 }
-//返回每个分区的item个数
+
 -(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
     return self.tabbarFilterArray.count;
 }
-//返回每个item
+
 -(UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath{
     UICollectionViewCell * cell  = [collectionView dequeueReusableCellWithReuseIdentifier:cellId forIndexPath:indexPath];
     cell.backgroundColor = HEX_RGBA(0x000000,0.80);
