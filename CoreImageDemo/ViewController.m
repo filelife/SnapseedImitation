@@ -38,7 +38,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
 }
 @property (nonatomic, strong) UIImageView * imageView;
 @property (nonatomic, strong) CALayer * imgLayer;
-@property (nonatomic, strong) UIImage * orignImg;
+@property (nonatomic, strong) UIImage * originImg;
 @property (nonatomic, strong) UIView * gestureView;
 @property (nonatomic, strong) MBProgressHUD *tipHud;
 @property (nonatomic, strong) UIScrollView * tabScrollView;
@@ -75,8 +75,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
     _tipHud = [[MBProgressHUD alloc] initWithView:self.view];
     [self.view addSubview:_tipHud];
     // Pic
-    
-    self.imageView = [[UIImageView alloc]initWithImage:[UIImage imageNamed:@"Duck.jpg"]];
+    self.originImg = [UIImage imageNamed:@"Duck.jpg"];
+    self.imageView = [[UIImageView alloc]initWithImage:self.originImg];
     self.imageView.width = SCREEN_WIDTH - 30;
     self.imageView.height = SCREEN_HEIGHT / 3 * 2;
     self.imageView.contentMode = UIViewContentModeScaleAspectFit;
@@ -161,7 +161,6 @@ typedef NS_ENUM(NSInteger, FilterType) {
     }];
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:(UIAlertActionStyleCancel) handler:^(UIAlertAction *action) {
         
-        
     }];
     [alertController addAction:okAction];
     [alertController addAction:cancelAction];
@@ -213,7 +212,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
          UIImagePickerControllerLivePhoto       // a PHLivePhoto
      */
     UIImage * pickerImg = [info objectForKey:UIImagePickerControllerEditedImage];
-    self.orignImg = pickerImg;
+    self.originImg = pickerImg;
     self.imageView.image = pickerImg;
     //Compression Quality
 //    NSData *dataEdited = UIImageJPEGRepresentation(self.imageView.image, 0.3);
@@ -263,7 +262,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
         });
     } else {
         dispatch_async(dispatch_get_main_queue(), ^{
-            self.imageView.image = self.orignImg;
+            self.imageView.image = self.originImg;
         });
     }
     _change = !_change;
@@ -326,7 +325,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     }
     CIImage * inputImage;
     @autoreleasepool {
-        NSData *imageData = UIImagePNGRepresentation(self.orignImg);
+        NSData *imageData = UIImagePNGRepresentation(self.originImg);
         inputImage = [CIImage imageWithData:imageData];
         imageData = nil;
         
@@ -335,14 +334,13 @@ typedef NS_ENUM(NSInteger, FilterType) {
     return [self useFilter:_colorFilter toCreateImageWiehCIImage:inputImage];
 }
 
-//滤镜相关代码
 
 - (UIImage *)setFilter :(FilterType) type{
     UIImage * resImage;
     __weak id weakSelf = self;
     @autoreleasepool {
         
-        NSData *imageData = UIImagePNGRepresentation(((ViewController *)weakSelf).orignImg);
+        NSData *imageData = UIImagePNGRepresentation(((ViewController *)weakSelf).originImg);
         CIImage * inputImage = [CIImage imageWithData:imageData];
         CIFilter * filter;
         switch (type) {
@@ -368,7 +366,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
                 break;
             case ModTransition: {
                 filter = [CIFilter filterWithName: @"CIModTransition"
-                                    keysAndValues: @"inputCenter",[CIVector vectorWithX:0.5*self.orignImg.size.width Y:0.5 * self.orignImg.size.height],
+                                    keysAndValues: @"inputCenter",[CIVector vectorWithX:0.5*((ViewController *)weakSelf).originImg.size.width Y:0.5 * ((ViewController *)weakSelf).originImg.size.height],
                                                    @"inputAngle", @(M_PI*0.1),
                                                    @"inputRadius", @30.0,
                                                    @"inputCompression", @10.0,
@@ -387,15 +385,11 @@ typedef NS_ENUM(NSInteger, FilterType) {
     return resImage;
 }
 
-
-/*
- * 绘制
- */
 - (UIImage * )useFilter:(CIFilter *)filter toCreateImageWiehCIImage:(CIImage*)inputImage {
     CIContext * ciContext = [CIContext contextWithOptions:nil];
     CGImageRef cgImage = [ciContext createCGImage:filter.outputImage fromRect:inputImage.extent];
     UIImage * resImage = [UIImage imageWithCGImage:cgImage];
-    CGImageRelease(cgImage);//释放CGImage对象
+    CGImageRelease(cgImage);
     [ciContext clearCaches];
     return resImage;
 }
