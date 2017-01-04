@@ -31,6 +31,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
 
 @interface ViewController () <SnapseedDropMenuDelegate,UICollectionViewDelegate, UICollectionViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate>{
     BOOL _change;
+    
     UIActivityIndicatorView * _activityIndicator;
     dispatch_queue_t _serialQueue;
     CIFilter * _colorFilter;
@@ -153,10 +154,39 @@ typedef NS_ENUM(NSInteger, FilterType) {
 }
 
 - (void)saveImage:(UIButton *)sender {
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"提示" message:@"保存图片到相册" preferredStyle:(UIAlertControllerStyleAlert)];
+    // 创建按钮
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"确定" style:(UIAlertActionStyleDefault) handler:^(UIAlertAction *action) {
+        [self saveEditImage];
+    }];
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"取消" style:(UIAlertActionStyleCancel) handler:^(UIAlertAction *action) {
+        
+        
+    }];
+    [alertController addAction:okAction];
+    [alertController addAction:cancelAction];
+    [self presentViewController:alertController animated:YES completion:nil];
+    
 
 }
 
+- (void)saveEditImage {
+    SEL selectorToCall = @selector(imageWasSavedSuccessfully:didFinishSavingWithError:contextInfo:);
+    UIImageWriteToSavedPhotosAlbum(self.imageView.image, self,selectorToCall, NULL);
+}
+
 #pragma mark UIImagePicker Delegate
+
+- (void) imageWasSavedSuccessfully:(UIImage *)paramImage didFinishSavingWithError:(NSError *)paramError contextInfo:(void *)paramContextInfo{
+    if (paramError == nil){
+        NSLog(@"Image was saved successfully.");
+    } else {
+        NSLog(@"An error happened while saving the image.");
+        NSLog(@"Error = %@", paramError);
+    }
+}
+
+
 - (void)settingGeneralProperty {
     /**
         *  图片源, 运行相关接口前需要指明源类型.必须有效,否则抛出异常. picker已经显示的时候改变这个值,picker会相应改变来适应.
@@ -194,6 +224,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
     UIImage * pickerImg = [info objectForKey:UIImagePickerControllerEditedImage];
     self.orignImg = pickerImg;
     self.imageView.image = pickerImg;
+    NSData *dataEdited = UIImageJPEGRepresentation(self.imageView.image, 0.3);
+
     [_picker dismissViewControllerAnimated:YES completion:nil];
     
 }
