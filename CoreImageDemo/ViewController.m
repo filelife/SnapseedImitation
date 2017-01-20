@@ -11,6 +11,8 @@
 #import "MBProgressHUD.h"
 #import "SnapseedDropMenu.h"
 #import <math.h>
+#import "GPUImage.h"
+
 #define FilterCellWidth 120
 #define MoveZoom 20
 #define TabbarHeight 40
@@ -51,6 +53,11 @@ typedef NS_ENUM(NSInteger, FilterType) {
 @property (nonatomic, strong) UIButton * leftbtn;
 @property (nonatomic, strong) UIButton * rightbtn;
 @property (nonatomic, strong) UIImagePickerController *picker;
+@property (nonatomic, strong) GPUImageBrightnessFilter * brighterFilter;
+@property (nonatomic, strong) GPUImageExposureFilter * exposureFilter;
+@property (nonatomic, strong) GPUImageContrastFilter * constrastFilter;
+@property (nonatomic, strong) GPUImagePicture * gpuOriginImage;
+@property (nonatomic, weak) UIImage * cacheImg;
 @end
 
 @implementation ViewController
@@ -60,7 +67,11 @@ typedef NS_ENUM(NSInteger, FilterType) {
     
     [self initData];
     [self initUI];
+    
+}
 
+- (void)viewWillAppear:(BOOL)animated {
+    
 }
 
 
@@ -75,6 +86,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     _tipHud = [[MBProgressHUD alloc] initWithView:self.view];
     [self.view addSubview:_tipHud];
     // Pic
+    
     self.originImg = [UIImage imageNamed:@"Duck.jpg"];
     self.imageView = [[UIImageView alloc]initWithImage:self.originImg];
     self.imageView.width = SCREEN_WIDTH - 30;
@@ -141,8 +153,17 @@ typedef NS_ENUM(NSInteger, FilterType) {
     _colorFilter = [CIFilter filterWithName:@"CIColorControls"];
     [_colorFilter setDefaults];
     
-    self.colorFilterArray = @[@"Saturation",@"Brightness",@"Contrast"];
+    self.colorFilterArray = @[@"Brighter",@"Constrast",@"Exposure"];
     self.tabbarFilterArray = @[@"Gaussian",@"Old photo",@"Enlargement"];
+    
+    self.brighterFilter = [[GPUImageBrightnessFilter alloc] init];
+    self.constrastFilter = [[GPUImageContrastFilter alloc] init];
+    self.exposureFilter = [[GPUImageExposureFilter alloc] init];
+    
+    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:[UIImage imageNamed:@"Duck.jpg"]];
+    [self.gpuOriginImage addTarget:self.brighterFilter];
+    [self.gpuOriginImage addTarget:self.constrastFilter];
+    [self.gpuOriginImage addTarget:self.exposureFilter];
 }
 
 #pragma mark button action block
@@ -211,7 +232,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
          UIImagePickerControllerMediaMetadata
          UIImagePickerControllerLivePhoto       // a PHLivePhoto
      */
-    UIImage * pickerImg = [info objectForKey:UIImagePickerControllerEditedImage];
+    __weak UIImage * pickerImg = [info objectForKey:UIImagePickerControllerEditedImage];
     self.originImg = pickerImg;
     self.imageView.image = pickerImg;
     //Compression Quality
@@ -277,15 +298,48 @@ typedef NS_ENUM(NSInteger, FilterType) {
 }
 
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender atIndex:(NSInteger)index valueDidChange:(CGFloat)value {
-    [self.imageView setImage:[self setColorFilter:value filterType:(index + 101)]];
+//    [self.imageView setImage:[self setColorFilter:value filterType:(index + 101)]];
+    
+    
 }
 
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender atIndex:(NSInteger)index isChanging:(CGFloat)value {
     NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.f",[self.colorFilterArray objectAtIndex:index],value];
     self.selectFilterNameLab.text = colorFilterName;
+    [self randerImageWithFilter:index value:value];
 }
 
 #pragma mark - Filter
+
+- (void)randerImageWithFilter:(NSInteger)index value:(CGFloat)value{
+    switch (index) {
+        case 0: {
+            _brighterFilter.brightness = value / 100;
+            [_brighterFilter useNextFrameForImageCapture];
+            [_gpuOriginImage processImage];
+            _cacheImg = [_brighterFilter imageFromCurrentFramebuffer];
+        }
+            break;
+        case 1: {
+            CGFloat changeValue = 1 + value / 100;
+            _constrastFilter.contrast = changeValue;
+            [_constrastFilter useNextFrameForImageCapture];
+            [_gpuOriginImage processImage];
+            _cacheImg = [_constrastFilter imageFromCurrentFramebuffer];
+        }
+            break;
+        case 2: {
+            _exposureFilter.exposure = value / 10;
+            [_exposureFilter useNextFrameForImageCapture];
+            [_gpuOriginImage processImage];
+            _cacheImg = [_exposureFilter imageFromCurrentFramebuffer];
+        }
+            break;
+        default:
+            break;
+    }
+    self.imageView.image = _cacheImg;
+}
 
 -(void)showAllFilters{
     NSArray *filterNames=[CIFilter filterNamesInCategory:kCICategoryBuiltIn];
