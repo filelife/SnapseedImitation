@@ -21,7 +21,8 @@ NSString * const cellId = @"FilterCell";
 typedef NS_ENUM(NSInteger, ColorFilterType) {
     SaturationFilter = 101,
     BrightnessFilter,
-    ContrastFilter
+    ContrastFilter,
+    LightShadow
 };
 
 typedef NS_ENUM(NSInteger, FilterType) {
@@ -46,7 +47,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
 @property (nonatomic, strong) UIScrollView * tabScrollView;
 @property (nonatomic, strong) SnapseedDropMenu * menu;
 @property (nonatomic, strong) UILabel * selectFilterNameLab;
-@property (nonatomic, copy) NSArray * colorFilterArray;
+@property (nonatomic, copy) NSArray<SnapseedDropMenuModel *> * colorFilterArray;
 @property (nonatomic, copy) NSArray * tabbarFilterArray;
 @property (nonatomic, strong) NSMutableArray<NSNumber *> * colorFilterValueArray;
 @property (nonatomic, strong) UICollectionView * collectionView;
@@ -56,6 +57,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
 @property (nonatomic, strong) GPUImageBrightnessFilter * brighterFilter;
 @property (nonatomic, strong) GPUImageExposureFilter * exposureFilter;
 @property (nonatomic, strong) GPUImageContrastFilter * constrastFilter;
+@property (nonatomic, strong) GPUImageHighlightShadowFilter * lightShadowFilter;
+
 @property (nonatomic, strong) GPUImagePicture * gpuOriginImage;
 @property (nonatomic, weak) UIImage * cacheImg;
 @end
@@ -153,17 +156,32 @@ typedef NS_ENUM(NSInteger, FilterType) {
     _colorFilter = [CIFilter filterWithName:@"CIColorControls"];
     [_colorFilter setDefaults];
     
-    self.colorFilterArray = @[@"Brighter",@"Constrast",@"Exposure"];
+    SnapseedDropMenuModel * brightModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Bright" defaultValue:0 maxValue:1 minValue:-1];
+    
+    SnapseedDropMenuModel * constrastModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Constrast" defaultValue:0 maxValue:4 minValue:0];
+    
+    SnapseedDropMenuModel * exposureModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Exposure" defaultValue:1 maxValue:4 minValue:0];
+    
+    SnapseedDropMenuModel * shadowModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Shadow" defaultValue:0 maxValue:1 minValue:0];
+    
+    SnapseedDropMenuModel * hightLightMolde = [[SnapseedDropMenuModel alloc]initWithTitle:@"HightLight" defaultValue:1 maxValue:1 minValue:0];
+    
+    self.colorFilterArray = @[brightModel,constrastModel,exposureModel,shadowModel,hightLightMolde];
+    
+    
     self.tabbarFilterArray = @[@"Gaussian",@"Old photo",@"Enlargement"];
     
     self.brighterFilter = [[GPUImageBrightnessFilter alloc] init];
     self.constrastFilter = [[GPUImageContrastFilter alloc] init];
     self.exposureFilter = [[GPUImageExposureFilter alloc] init];
+    self.lightShadowFilter = [[GPUImageHighlightShadowFilter alloc] init];
+    
     
     self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:[UIImage imageNamed:@"Duck.jpg"]];
     [self.gpuOriginImage addTarget:self.brighterFilter];
     [self.gpuOriginImage addTarget:self.constrastFilter];
     [self.gpuOriginImage addTarget:self.exposureFilter];
+    [self.gpuOriginImage addTarget:self.lightShadowFilter];
 }
 
 #pragma mark button action block
@@ -293,7 +311,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
 
 #pragma mark SnapseedDropMenu Delegate
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender didSelectCellAtIndex:(NSInteger)index value:(CGFloat)value{
-    NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.f",[self.colorFilterArray objectAtIndex:index],value];
+    SnapseedDropMenuModel * model = [self.colorFilterArray objectAtIndex:index];
+    NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.1f",model.title,value];
     self.selectFilterNameLab.text = colorFilterName;
 }
 
@@ -304,7 +323,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
 }
 
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender atIndex:(NSInteger)index isChanging:(CGFloat)value {
-    NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.f",[self.colorFilterArray objectAtIndex:index],value];
+    SnapseedDropMenuModel * model = [self.colorFilterArray objectAtIndex:index];
+    NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.1f",model.title,value];
     self.selectFilterNameLab.text = colorFilterName;
     [self randerImageWithFilter:index value:value];
 }
@@ -314,27 +334,39 @@ typedef NS_ENUM(NSInteger, FilterType) {
 - (void)randerImageWithFilter:(NSInteger)index value:(CGFloat)value{
     switch (index) {
         case 0: {
-            _brighterFilter.brightness = value / 100;
+            _brighterFilter.brightness = value ;
             [_brighterFilter useNextFrameForImageCapture];
             [_gpuOriginImage processImage];
             _cacheImg = [_brighterFilter imageFromCurrentFramebuffer];
         }
             break;
         case 1: {
-            CGFloat changeValue = 1 + value / 100;
-            _constrastFilter.contrast = changeValue;
+            
+            _constrastFilter.contrast = value;
             [_constrastFilter useNextFrameForImageCapture];
             [_gpuOriginImage processImage];
             _cacheImg = [_constrastFilter imageFromCurrentFramebuffer];
         }
             break;
         case 2: {
-            _exposureFilter.exposure = value / 10;
+            _exposureFilter.exposure = value ;
             [_exposureFilter useNextFrameForImageCapture];
             [_gpuOriginImage processImage];
             _cacheImg = [_exposureFilter imageFromCurrentFramebuffer];
         }
             break;
+        case 3: {
+            _lightShadowFilter.shadows = value;
+            [_lightShadowFilter useNextFrameForImageCapture];
+            [_gpuOriginImage processImage];
+            _cacheImg = [_lightShadowFilter imageFromCurrentFramebuffer];
+        } break;
+        case 4: {
+            _lightShadowFilter.highlights = value;
+            [_lightShadowFilter useNextFrameForImageCapture];
+            [_gpuOriginImage processImage];
+            _cacheImg = [_lightShadowFilter imageFromCurrentFramebuffer];
+        }
         default:
             break;
     }
@@ -371,6 +403,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
             CGFloat finalValue = 1 + value / 100;
             [_colorFilter setValue:[NSNumber numberWithFloat:finalValue] forKey:@"inputContrast"];
         }
+            break;
+        case LightShadow:
             break;
         default:
         {

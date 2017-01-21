@@ -8,6 +8,16 @@
 
 #import <UIKit/UIKit.h>
 #import "UIView+Extention.h"
+
+@interface SnapseedDropMenuModel : NSObject
+@property (nonatomic, assign) CGFloat defaultValue;
+@property (nonatomic, assign) CGFloat maxValue;
+@property (nonatomic, assign) CGFloat minValue;
+@property (nonatomic, copy) NSString * title;
+
+- (instancetype)initWithTitle:(NSString *)title defaultValue:(CGFloat)defaultValue maxValue:(CGFloat)maxValue minValue:(CGFloat)minValue;
+@end
+
 @class SnapseedDropMenu;
 
 @protocol SnapseedDropMenuDelegate<NSObject>

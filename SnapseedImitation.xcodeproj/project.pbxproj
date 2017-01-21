@@ -258,10 +258,9 @@
 		BF0B00271E0FA2E50014BA4B = {
 			isa = PBXGroup;
 			children = (
+				BFCB95771E330BCA001731BF /* 3rdSDK */,
 				BFCB95631E3308F7001731BF /* SupportFile */,
 				BFCB95561E3308D4001731BF /* SnapseedImitation */,
-				BFCB949C1E3308CE001731BF /* GPUImage */,
-				BFCB954D1E3308CE001731BF /* MBProgressHUD */,
 				BF0B00311E0FA2E50014BA4B /* Products */,
 				BF0B004A1E0FA3170014BA4B /* Frameworks */,
 			);
@@ -530,6 +529,15 @@
 			);
 			name = Base.lproj;
 			path = SnapseedImitation/Base.lproj;
+			sourceTree = "<group>";
+		};
+		BFCB95771E330BCA001731BF /* 3rdSDK */ = {
+			isa = PBXGroup;
+			children = (
+				BFCB949C1E3308CE001731BF /* GPUImage */,
+				BFCB954D1E3308CE001731BF /* MBProgressHUD */,
+			);
+			name = 3rdSDK;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

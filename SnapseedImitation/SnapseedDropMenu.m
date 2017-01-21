@@ -9,6 +9,18 @@
 #import "SnapseedDropMenu.h"
 #import "SnapseedDropMenuTableViewCell.h"
 #import <math.h>
+
+@implementation SnapseedDropMenuModel
+- (instancetype)initWithTitle:(NSString *)title defaultValue:(CGFloat)defaultValue maxValue:(CGFloat)maxValue minValue:(CGFloat)minValue {
+    self = [super init];
+    self.title = title;
+    self.defaultValue = defaultValue;
+    self.maxValue = maxValue;
+    self.minValue = minValue;
+    return self;
+}
+@end
+
 typedef NS_ENUM(NSInteger, PanGestureDirection) {
     NoGestureDirection = 0,
     LeftOrRight = 1,
@@ -20,9 +32,9 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
 };
 #define MoveZoom 5
 @interface SnapseedDropMenu()<UITableViewDelegate,UITableViewDataSource> {
-    int * _intValueArray;
+    CGFloat * _intValueArray;
 }
-@property (nonatomic, copy)NSArray * dataArray;
+@property (nonatomic, copy)NSArray<SnapseedDropMenuModel*> * dataArray;
 @property (nonatomic, assign) NSInteger selectNum;
 @property (nonatomic, strong) UIView * superView;
 @property (nonatomic, assign) PanGestureDirection lastGestureDirecttion;
@@ -49,10 +61,11 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
     UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGesture:)];
     [_superView addGestureRecognizer:panGesture];
     self.separatorStyle = UITableViewCellSeparatorStyleNone;
-    _intValueArray = (int *)malloc(sizeof(int)*array.count);
+    _intValueArray = (CGFloat *)malloc(sizeof(CGFloat)*array.count);
     
     for(int i = 0; i < _dataArray.count; i++) {
-        _intValueArray[i] = 0;
+        SnapseedDropMenuModel * model = [_dataArray objectAtIndex:i];
+        _intValueArray[i] = model.defaultValue;
     }
     
     return self;
@@ -81,14 +94,14 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    NSString * title = [_dataArray objectAtIndex:indexPath.row];
+    SnapseedDropMenuModel * model = [_dataArray objectAtIndex:indexPath.row];
     SnapseedDropMenuTableViewCell * cell = [tableView dequeueReusableCellWithIdentifier:@"SnapseedDrowMenuCell"];
     if(!cell) {
         cell = [[SnapseedDropMenuTableViewCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SnapseedDrowMenuCell"];
         cell.backgroundColor = [UIColor clearColor];
     }
-    cell.title.text = title;
-    cell.valueLab.text = [NSString stringWithFormat:@"%d",_intValueArray[indexPath.row]];
+    cell.title.text = model.title;
+    cell.valueLab.text = [NSString stringWithFormat:@"%.1f",_intValueArray[indexPath.row]];
     if(indexPath.row == _selectNum) {
         cell.mainView.backgroundColor = COLOR_14;
     } else {
@@ -139,7 +152,7 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
     //每次仅获取较短的位移距离
     CGPoint movePoint = [panGesture translationInView:_superView];
     [panGesture setTranslation:CGPointZero inView:_superView];
-    NSLog(@"X:%.0fY:%.0f",movePoint.x,movePoint.y);
+    
     if(_gestureLock == UpOrDown){
         //锁定当前滑动为上下滑动
         
@@ -153,12 +166,14 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
         
     } else if(_gestureLock == LeftOrRight ){
         //锁定当前滑动为左右滑动
-        if(_intValueArray[_selectNum] + movePoint.x > 100) {
-            _intValueArray[_selectNum] = 100;
-        } else if(_intValueArray[_selectNum] + movePoint.x < -100) {
-            _intValueArray[_selectNum] = -100;
+        SnapseedDropMenuModel * model = [_dataArray objectAtIndex:_selectNum];
+        CGFloat value = movePoint.x / (model.maxValue - model.minValue) / 50;
+        if(_intValueArray[_selectNum] + value > model.maxValue) {
+            _intValueArray[_selectNum] = model.maxValue;
+        } else if(_intValueArray[_selectNum] + value < model.minValue) {
+            _intValueArray[_selectNum] = model.minValue;
         } else {
-            _intValueArray[_selectNum] += movePoint.x;
+            _intValueArray[_selectNum] += value;
         }
         if(self.dropMenuDelegate) {
             if([self.dropMenuDelegate respondsToSelector:@selector(snapseedDropMenu: atIndex:isChanging:)]) {
