@@ -182,6 +182,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     [self.gpuOriginImage addTarget:self.constrastFilter];
     [self.gpuOriginImage addTarget:self.exposureFilter];
     [self.gpuOriginImage addTarget:self.lightShadowFilter];
+    
 }
 
 #pragma mark button action block
@@ -252,7 +253,14 @@ typedef NS_ENUM(NSInteger, FilterType) {
      */
     __weak UIImage * pickerImg = [info objectForKey:UIImagePickerControllerEditedImage];
     self.originImg = pickerImg;
+    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:pickerImg];
+    [self.gpuOriginImage addTarget:self.brighterFilter];
+    [self.gpuOriginImage addTarget:self.constrastFilter];
+    [self.gpuOriginImage addTarget:self.exposureFilter];
+    [self.gpuOriginImage addTarget:self.lightShadowFilter];
     self.imageView.image = pickerImg;
+    
+    
     //Compression Quality
 //    NSData *dataEdited = UIImageJPEGRepresentation(self.imageView.image, 0.3);
     [_picker dismissViewControllerAnimated:YES completion:nil];
