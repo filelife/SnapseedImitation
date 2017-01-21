@@ -125,7 +125,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     self.collectionView.backgroundColor = HEX_RGBA(0xdddddd,0.50);
     self.collectionView.contentInset = UIEdgeInsetsMake(5, 10, 5, 10);
     self.collectionView.scrollEnabled = YES;
-    [self.view addSubview:self.collectionView];
+//    [self.view addSubview:self.collectionView];
     
  
     
@@ -141,12 +141,12 @@ typedef NS_ENUM(NSInteger, FilterType) {
     
     
     //Snapseed menu
-    //Waiting for a minute....
+    
     _colorFilterValueArray = [NSMutableArray arrayWithCapacity:_colorFilterArray.count];
     CGPoint point = CGPointMake(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     self.menu = [[SnapseedDropMenu alloc]initWithArray:self.colorFilterArray  viewCenterPoint:point inView:self.gestureView];
     self.menu.dropMenuDelegate = self;
-//    [self.view addSubview:self.menu];
+    [self.view addSubview:self.menu];
     
     
 }
