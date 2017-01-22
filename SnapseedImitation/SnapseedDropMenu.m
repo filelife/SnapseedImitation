@@ -30,7 +30,7 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
     PanGestureleft,
     PanGestureRight
 };
-#define MoveZoom 5
+#define MoveZoom 10
 @interface SnapseedDropMenu()<UITableViewDelegate,UITableViewDataSource> {
     CGFloat * _intValueArray;
 }
@@ -58,10 +58,15 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
     _superView = superView;
     _selectNum = 0;
     [self reloadData];
-    UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGesture:)];
+    UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self
+                                                                                 action:@selector(panGesture:)];
     [_superView addGestureRecognizer:panGesture];
+    
     self.separatorStyle = UITableViewCellSeparatorStyleNone;
     _intValueArray = (CGFloat *)malloc(sizeof(CGFloat)*array.count);
+    
+  
+    
     
     for(int i = 0; i < _dataArray.count; i++) {
         SnapseedDropMenuModel * model = [_dataArray objectAtIndex:i];
@@ -110,6 +115,9 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
     return cell;
 }
 
+
+
+
 - (void)panGesture:(id)sender {
     
     UIPanGestureRecognizer *panGesture = sender;
@@ -138,7 +146,7 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
         }
             break;
         case UIGestureRecognizerStateBegan: {
-            
+            _gestureLock = NoGestureDirection;
         }
             break;
         case UIGestureRecognizerStateChanged : {
@@ -152,6 +160,7 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
     //每次仅获取较短的位移距离
     CGPoint movePoint = [panGesture translationInView:_superView];
     [panGesture setTranslation:CGPointZero inView:_superView];
+    
     
     if(_gestureLock == UpOrDown){
         //锁定当前滑动为上下滑动
@@ -186,10 +195,12 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
         if(movePoint.x > -MoveZoom && movePoint.x < MoveZoom ) {
             if(movePoint.y <= -MoveZoom || movePoint.y >= MoveZoom ) {
                 if(_gestureLock == UpOrDown || _gestureLock == NoGestureDirection) {
+                    NSLog(@"Up or down");
                     _gestureLock = UpOrDown;
                 }
             }
         } else {
+            NSLog(@"Left or right");
             _gestureLock = LeftOrRight;
         }
     }

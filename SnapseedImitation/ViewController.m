@@ -58,9 +58,10 @@ typedef NS_ENUM(NSInteger, FilterType) {
 @property (nonatomic, strong) GPUImageExposureFilter * exposureFilter;
 @property (nonatomic, strong) GPUImageContrastFilter * constrastFilter;
 @property (nonatomic, strong) GPUImageHighlightShadowFilter * lightShadowFilter;
-
+@property (nonatomic, strong) GPUImageFilterPipeline  * filterPipeline;
 @property (nonatomic, strong) GPUImagePicture * gpuOriginImage;
-@property (nonatomic, weak) UIImage * cacheImg;
+@property (nonatomic, strong) GPUImageView * gpuimageView;
+@property (nonatomic, strong) UIImage * cacheImg;
 @end
 
 @implementation ViewController
@@ -88,16 +89,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     //loading tip
     _tipHud = [[MBProgressHUD alloc] initWithView:self.view];
     [self.view addSubview:_tipHud];
-    // Pic
     
-    self.originImg = [UIImage imageNamed:@"Duck.jpg"];
-    self.imageView = [[UIImageView alloc]initWithImage:self.originImg];
-    self.imageView.width = SCREEN_WIDTH - 30;
-    self.imageView.height = SCREEN_HEIGHT / 3 * 2;
-    self.imageView.contentMode = UIViewContentModeScaleAspectFit;
-    self.imageView.centerX = SCREEN_WIDTH / 2;
-    self.imageView.y = SCREEN_HEIGHT / 6;
-    [self.view addSubview:self.imageView];
     
     
     self.leftbtn = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -177,12 +169,26 @@ typedef NS_ENUM(NSInteger, FilterType) {
     self.exposureFilter = [[GPUImageExposureFilter alloc] init];
     self.lightShadowFilter = [[GPUImageHighlightShadowFilter alloc] init];
     
-    
-    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:[UIImage imageNamed:@"Duck.jpg"]];
+    _cacheImg = [UIImage imageNamed:@"Duck.jpg"];
+    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:_cacheImg];
     [self.gpuOriginImage addTarget:self.brighterFilter];
     [self.gpuOriginImage addTarget:self.constrastFilter];
     [self.gpuOriginImage addTarget:self.exposureFilter];
     [self.gpuOriginImage addTarget:self.lightShadowFilter];
+    
+    
+    // Pic
+    
+    self.originImg = _cacheImg;
+    self.imageView = [[UIImageView alloc]initWithImage:self.originImg];
+    self.imageView.width = SCREEN_WIDTH - 30;
+    self.imageView.height = SCREEN_HEIGHT / 3 * 2;
+    self.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    self.imageView.centerX = SCREEN_WIDTH / 2;
+    self.imageView.y = SCREEN_HEIGHT / 6;
+    [self.view addSubview:self.imageView];
+    
+    _gpuimageView  = [[GPUImageView alloc] initWithFrame:self.imageView.bounds];
     
 }
 
@@ -254,12 +260,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
      */
     __weak UIImage * pickerImg = [info objectForKey:UIImagePickerControllerEditedImage];
     self.originImg = pickerImg;
-    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:pickerImg];
-    [self.gpuOriginImage addTarget:self.brighterFilter];
-    [self.gpuOriginImage addTarget:self.constrastFilter];
-    [self.gpuOriginImage addTarget:self.exposureFilter];
-    [self.gpuOriginImage addTarget:self.lightShadowFilter];
-    self.imageView.image = pickerImg;
+    
     
     
     //Compression Quality
@@ -341,45 +342,99 @@ typedef NS_ENUM(NSInteger, FilterType) {
 #pragma mark - Filter
 
 - (void)randerImageWithFilter:(NSInteger)index value:(CGFloat)value{
+    
     switch (index) {
         case 0: {
-            _brighterFilter.brightness = value ;
-            [_brighterFilter useNextFrameForImageCapture];
-            [_gpuOriginImage processImage];
-            _cacheImg = [_brighterFilter imageFromCurrentFramebuffer];
+            if(_brighterFilter) {
+                _brighterFilter.brightness = value ;
+//                [_gpuOriginImage processImage];
+//                [_brighterFilter useNextFrameForImageCapture];
+//                self.imageView.image = [_brighterFilter imageFromCurrentFramebuffer];
+            }
         }
             break;
         case 1: {
-            
-            _constrastFilter.contrast = value;
-            [_constrastFilter useNextFrameForImageCapture];
-            [_gpuOriginImage processImage];
-            _cacheImg = [_constrastFilter imageFromCurrentFramebuffer];
+            if(_constrastFilter) {
+                _constrastFilter.contrast = value;
+//                [_gpuOriginImage processImage];
+//                [_constrastFilter useNextFrameForImageCapture];
+//                self.imageView.image = [_constrastFilter imageFromCurrentFramebuffer];
+            }
         }
             break;
         case 2: {
-            _exposureFilter.exposure = value ;
-            [_exposureFilter useNextFrameForImageCapture];
-            [_gpuOriginImage processImage];
-            _cacheImg = [_exposureFilter imageFromCurrentFramebuffer];
+            if(_exposureFilter) {
+                _exposureFilter.exposure = value ;
+//                [_gpuOriginImage processImage];
+//                [_exposureFilter useNextFrameForImageCapture];
+//                self.imageView.image = [_exposureFilter imageFromCurrentFramebuffer];
+            }
         }
             break;
         case 3: {
-            _lightShadowFilter.shadows = value;
-            [_lightShadowFilter useNextFrameForImageCapture];
-            [_gpuOriginImage processImage];
-            _cacheImg = [_lightShadowFilter imageFromCurrentFramebuffer];
+            if(_lightShadowFilter) {
+                _lightShadowFilter.shadows = value;
+//                [_gpuOriginImage processImage];
+//                [_lightShadowFilter useNextFrameForImageCapture];
+                
+//                self.imageView.image = [_lightShadowFilter imageFromCurrentFramebuffer];
+            }
         } break;
         case 4: {
-            _lightShadowFilter.highlights = value;
-            [_lightShadowFilter useNextFrameForImageCapture];
-            [_gpuOriginImage processImage];
-            _cacheImg = [_lightShadowFilter imageFromCurrentFramebuffer];
+            if(_lightShadowFilter) {
+                _lightShadowFilter.highlights = value;
+//                [_gpuOriginImage processImage];
+//                [_lightShadowFilter useNextFrameForImageCapture];
+//                self.imageView.image = [_lightShadowFilter imageFromCurrentFramebuffer];
+            }
         }
         default:
             break;
     }
-    self.imageView.image = _cacheImg;
+    NSMutableArray * array = [NSMutableArray arrayWithObjects:self.brighterFilter,self.constrastFilter,self.exposureFilter,self.lightShadowFilter, nil];
+    self.filterPipeline = [[GPUImageFilterPipeline alloc]initWithOrderedFilters:array input:self.gpuOriginImage output:_gpuimageView];
+    [self.gpuOriginImage processImage];
+    switch (index) {
+        case 0: {
+            if(_brighterFilter) {
+                [_brighterFilter useNextFrameForImageCapture];
+            }
+        }
+            break;
+        case 1: {
+            if(_constrastFilter) {
+                [_constrastFilter useNextFrameForImageCapture];
+            }
+        }
+            break;
+        case 2: {
+            if(_exposureFilter) {
+                
+                [_exposureFilter useNextFrameForImageCapture];
+                
+            }
+        }
+            break;
+        case 3: {
+            if(_lightShadowFilter) {
+
+                [_lightShadowFilter useNextFrameForImageCapture];
+
+            }
+        } break;
+        case 4: {
+            if(_lightShadowFilter) {
+                [_lightShadowFilter useNextFrameForImageCapture];
+            }
+        }
+        default:
+            break;
+    }
+    
+    
+    self.imageView.image = [self.filterPipeline currentFilteredFrame];
+    
+    
 }
 
 -(void)showAllFilters{
