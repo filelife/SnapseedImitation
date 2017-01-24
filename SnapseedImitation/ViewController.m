@@ -39,7 +39,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     dispatch_queue_t _serialQueue;
     CIFilter * _colorFilter;
 }
-@property (nonatomic, strong) UIImageView * imageView;
+
 @property (nonatomic, strong) CALayer * imgLayer;
 @property (nonatomic, strong) UIImage * originImg;
 @property (nonatomic, strong) UIView * gestureView;
@@ -61,7 +61,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
 @property (nonatomic, strong) GPUImageFilterPipeline  * filterPipeline;
 @property (nonatomic, strong) GPUImagePicture * gpuOriginImage;
 @property (nonatomic, strong) GPUImageView * gpuimageView;
-@property (nonatomic, strong) UIImage * cacheImg;
+
 @end
 
 @implementation ViewController
@@ -131,7 +131,6 @@ typedef NS_ENUM(NSInteger, FilterType) {
     
     [self.view addSubview:self.gestureView];
     
-    
     //Snapseed menu
     
     _colorFilterValueArray = [NSMutableArray arrayWithCapacity:_colorFilterArray.count];
@@ -151,7 +150,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     
     SnapseedDropMenuModel * brightModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Bright" defaultValue:0 maxValue:1 minValue:-1];
     
-    SnapseedDropMenuModel * constrastModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Constrast" defaultValue:0 maxValue:4 minValue:0];
+    SnapseedDropMenuModel * constrastModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Constrast" defaultValue:1 maxValue:4 minValue:0];
     
     SnapseedDropMenuModel * exposureModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Exposure" defaultValue:1 maxValue:4 minValue:-2];
     
@@ -169,8 +168,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     self.exposureFilter = [[GPUImageExposureFilter alloc] init];
     self.lightShadowFilter = [[GPUImageHighlightShadowFilter alloc] init];
     
-    _cacheImg = [UIImage imageNamed:@"Duck.jpg"];
-    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:_cacheImg smoothlyScaleOutput:YES];
+    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:[UIImage imageNamed:@"Duck.jpg"] smoothlyScaleOutput:YES];
     [self.gpuOriginImage processImage];
     [self.gpuOriginImage addTarget:self.brighterFilter];
     [self.gpuOriginImage addTarget:self.constrastFilter];
@@ -180,7 +178,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
    
     // Pic
     
-    self.originImg = _cacheImg;
+    
     self.gpuimageView = [[GPUImageView alloc] initWithFrame:CGRectZero];
     self.gpuimageView.width = SCREEN_WIDTH - 30;
     self.gpuimageView.height = SCREEN_HEIGHT / 3 * 2;
@@ -223,15 +221,30 @@ typedef NS_ENUM(NSInteger, FilterType) {
 
 - (void)saveEditImage {
     SEL selectorToCall = @selector(imageWasSavedSuccessfully:didFinishSavingWithError:contextInfo:);
-    UIImageWriteToSavedPhotosAlbum(self.imageView.image, self,selectorToCall, NULL);
+    UIGraphicsBeginImageContext(self.gpuimageView.frame.size);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    [self.gpuimageView.layer renderInContext:context];
+    
+    UIImage* tImage = UIGraphicsGetImageFromCurrentImageContext();
+    
+    UIGraphicsEndImageContext();
+    [self.gpuOriginImage processImage];
+    
+    [self.gpuOriginImage useNextFrameForImageCapture];
+    UIImage * saveImage = [self.filterPipeline currentFilteredFrame];
+    UIImageWriteToSavedPhotosAlbum(saveImage, self,selectorToCall, NULL);
 }
 
 #pragma mark UIImagePicker Delegate
 
 - (void) imageWasSavedSuccessfully:(UIImage *)paramImage didFinishSavingWithError:(NSError *)paramError contextInfo:(void *)paramContextInfo{
     if (paramError == nil){
+        [self showTextTips:@"Saving successfully"];
         NSLog(@"Image was saved successfully.");
     } else {
+        [self showTextTips:@"Saved failure"];
         NSLog(@"An error happened while saving the image.");
         NSLog(@"Error = %@", paramError);
     }
@@ -308,15 +321,15 @@ typedef NS_ENUM(NSInteger, FilterType) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self showLoadingTips];
             });
-            UIImage * img = [self setFilter:(FilterType)(indexPath.row + 201)];
+//            UIImage * img = [self setFilter:(FilterType)(indexPath.row + 201)];
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self.imageView setImage:img];
+                
                 [self dismissLoadingTips];
             });
         });
     } else {
         dispatch_async(dispatch_get_main_queue(), ^{
-            self.imageView.image = self.originImg;
+            
         });
     }
     _change = !_change;
@@ -353,7 +366,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
             if(_brighterFilter) {
                 _brighterFilter.brightness = value ;
                 [_gpuOriginImage processImage];
-//                [_brighterFilter useNextFrameForImageCapture];
+                [_brighterFilter useNextFrameForImageCapture];
 //                self.imageView.image = [_brighterFilter imageFromCurrentFramebuffer];
             }
         }
@@ -362,7 +375,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
             if(_constrastFilter) {
                 _constrastFilter.contrast = value;
                 [_gpuOriginImage processImage];
-//                [_constrastFilter useNextFrameForImageCapture];
+                [_constrastFilter useNextFrameForImageCapture];
 //                self.imageView.image = [_constrastFilter imageFromCurrentFramebuffer];
             }
         }
@@ -371,7 +384,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
             if(_exposureFilter) {
                 _exposureFilter.exposure = value ;
                 [_gpuOriginImage processImage];
-//                [_exposureFilter useNextFrameForImageCapture];
+                [_exposureFilter useNextFrameForImageCapture];
 //                self.imageView.image = [_exposureFilter imageFromCurrentFramebuffer];
             }
         }
@@ -380,8 +393,8 @@ typedef NS_ENUM(NSInteger, FilterType) {
             if(_lightShadowFilter) {
                 _lightShadowFilter.shadows = value;
                 [_gpuOriginImage processImage];
-//                [_lightShadowFilter useNextFrameForImageCapture];
-//                
+                [_lightShadowFilter useNextFrameForImageCapture];
+//
 //                self.imageView.image = [_lightShadowFilter imageFromCurrentFramebuffer];
             }
         } break;
@@ -389,7 +402,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
             if(_lightShadowFilter) {
                 _lightShadowFilter.highlights = value;
                 [_gpuOriginImage processImage];
-//                [_lightShadowFilter useNextFrameForImageCapture];
+                [_lightShadowFilter useNextFrameForImageCapture];
 //                self.imageView.image = [_lightShadowFilter imageFromCurrentFramebuffer];
             }
         }
@@ -476,11 +489,11 @@ typedef NS_ENUM(NSInteger, FilterType) {
             }
                 break;
             case AffineTransform: {
-                CGFloat width = self.imageView.image.size.width;
-                CGAffineTransform trans = CGAffineTransformMake(3, 0, 0, 3, - width,  - width);
-                filter = [CIFilter filterWithName:@"CIAffineTransform"
-                                    keysAndValues:@"inputImage",inputImage,
-                                                  @"inputTransform",[NSValue valueWithCGAffineTransform:trans],nil];
+//                CGFloat width = self.imageView.image.size.width;
+//                CGAffineTransform trans = CGAffineTransformMake(3, 0, 0, 3, - width,  - width);
+//                filter = [CIFilter filterWithName:@"CIAffineTransform"
+//                                    keysAndValues:@"inputImage",inputImage,
+//                                                  @"inputTransform",[NSValue valueWithCGAffineTransform:trans],nil];
             }
                 break;
             case ModTransition: {
