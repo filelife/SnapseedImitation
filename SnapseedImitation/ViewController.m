@@ -7,14 +7,11 @@
 //
 
 #import "ViewController.h"
-#import <CoreImage/CoreImage.h>
 #import "MBProgressHUD.h"
 #import "SnapseedDropMenu.h"
 #import <math.h>
 #import "GPUImage.h"
 
-#define FilterCellWidth 120
-#define MoveZoom 20
 
 @interface ViewController () <SnapseedDropMenuDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate>{
     BOOL _change;
@@ -39,7 +36,7 @@
 @property (nonatomic, strong) GPUImageHighlightShadowFilter * highLightFilter;
 @property (nonatomic, strong) GPUImageFilterPipeline  * filterPipeline;
 @property (nonatomic, strong) GPUImagePicture * gpuOriginImage;
-@property (nonatomic, strong) GPUImageView * gpuimageView;
+@property (nonatomic, strong) GPUImageView * previewImageView;
 @property (nonatomic, strong) NSMutableArray * filtersArray;
 @end
 
@@ -47,10 +44,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
     [self initData];
     [self initUI];
-    
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -137,21 +132,18 @@
     [self.gpuOriginImage addTarget:self.lightShadowFilter];
     [self.gpuOriginImage addTarget:self.highLightFilter];
     
-   
-    // Pic
     
-    
-    self.gpuimageView = [[GPUImageView alloc] initWithFrame:CGRectZero];
-    self.gpuimageView.width = SCREEN_WIDTH - 30;
-    self.gpuimageView.height = SCREEN_HEIGHT / 3 * 2;
-    self.gpuimageView.contentMode = UIViewContentModeScaleAspectFit;
-    self.gpuimageView.centerX = SCREEN_WIDTH / 2;
-    self.gpuimageView.y = SCREEN_HEIGHT / 6;
-    [self.view addSubview:self.gpuimageView];
+    self.previewImageView = [[GPUImageView alloc] initWithFrame:CGRectZero];
+    self.previewImageView.width = SCREEN_WIDTH - 30;
+    self.previewImageView.height = SCREEN_HEIGHT / 3 * 2;
+    self.previewImageView.contentMode = UIViewContentModeScaleAspectFit;
+    self.previewImageView.centerX = SCREEN_WIDTH / 2;
+    self.previewImageView.y = SCREEN_HEIGHT / 6;
+    [self.view addSubview:self.previewImageView];
     
     
     
-    self.filterPipeline = [[GPUImageFilterPipeline alloc]initWithOrderedFilters:_filtersArray input:self.gpuOriginImage output:_gpuimageView];
+    self.filterPipeline = [[GPUImageFilterPipeline alloc]initWithOrderedFilters:_filtersArray input:self.gpuOriginImage output:_previewImageView];
     [_gpuOriginImage processImage];
 }
 
@@ -260,19 +252,23 @@
 
 
 #pragma mark SnapseedDropMenu Delegate
-- (void)snapseedDropMenu:(SnapseedDropMenu *)sender didSelectCellAtIndex:(NSInteger)index value:(CGFloat)value{
+- (void)snapseedDropMenu:(SnapseedDropMenu *)sender
+    didSelectCellAtIndex:(NSInteger)index
+                   value:(CGFloat)value{
     SnapseedDropMenuModel * model = [self.colorFilterArray objectAtIndex:index];
     NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.1f",model.title,value];
     self.selectFilterNameLab.text = colorFilterName;
 }
 
-- (void)snapseedDropMenu:(SnapseedDropMenu *)sender atIndex:(NSInteger)index valueDidChange:(CGFloat)value {
-//    [self.imageView setImage:[self setColorFilter:value filterType:(index + 101)]];
-    
-    
+- (void)snapseedDropMenu:(SnapseedDropMenu *)sender
+                 atIndex:(NSInteger)index
+          valueDidChange:(CGFloat)value {
+
 }
 
-- (void)snapseedDropMenu:(SnapseedDropMenu *)sender atIndex:(NSInteger)index isChanging:(CGFloat)value {
+- (void)snapseedDropMenu:(SnapseedDropMenu *)sender
+                 atIndex:(NSInteger)index
+              isChanging:(CGFloat)value {
     SnapseedDropMenuModel * model = [self.colorFilterArray objectAtIndex:index];
     NSString * colorFilterName = [NSString stringWithFormat:@"%@  %.1f",model.title,value];
     self.selectFilterNameLab.text = colorFilterName;
@@ -282,15 +278,12 @@
 #pragma mark - Filter
 
 - (void)randerImageWithFilter:(NSInteger)index value:(CGFloat)value{
-    
-    
     switch (index) {
         case 0: {
             if(_brighterFilter) {
                 _brighterFilter.brightness = value ;
                 [_gpuOriginImage processImage];
                 [_brighterFilter useNextFrameForImageCapture];
-//                self.imageView.image = [_brighterFilter imageFromCurrentFramebuffer];
             }
         }
             break;
@@ -299,7 +292,6 @@
                 _constrastFilter.contrast = value;
                 [_gpuOriginImage processImage];
                 [_constrastFilter useNextFrameForImageCapture];
-//                self.imageView.image = [_constrastFilter imageFromCurrentFramebuffer];
             }
         }
             break;
@@ -308,7 +300,7 @@
                 _exposureFilter.exposure = value ;
                 [_gpuOriginImage processImage];
                 [_exposureFilter useNextFrameForImageCapture];
-//                self.imageView.image = [_exposureFilter imageFromCurrentFramebuffer];
+
             }
         }
             break;
@@ -317,8 +309,6 @@
                 _lightShadowFilter.shadows = value;
                 [_gpuOriginImage processImage];
                 [_lightShadowFilter useNextFrameForImageCapture];
-//
-//                self.imageView.image = [_lightShadowFilter imageFromCurrentFramebuffer];
             }
         } break;
         case 4: {
@@ -326,7 +316,6 @@
                 self.highLightFilter.highlights = value;
                 [_gpuOriginImage processImage];
                 [self.highLightFilter useNextFrameForImageCapture];
-//                self.imageView.image = [_lightShadowFilter imageFromCurrentFramebuffer];
             }
         }
         default:
