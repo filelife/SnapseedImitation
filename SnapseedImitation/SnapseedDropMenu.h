@@ -30,5 +30,6 @@
 
 @interface SnapseedDropMenu : UITableView
 @property (nonatomic, weak) id<SnapseedDropMenuDelegate> dropMenuDelegate;
+@property (nonatomic, assign) NSInteger selectNum;
 - (instancetype)initWithArray:(NSArray *)array viewCenterPoint:(CGPoint)origin inView:(UIView *)superView;
 @end

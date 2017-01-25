@@ -35,7 +35,7 @@ typedef NS_ENUM(NSInteger, PanGestureDirection) {
     CGFloat * _intValueArray;
 }
 @property (nonatomic, copy)NSArray<SnapseedDropMenuModel*> * dataArray;
-@property (nonatomic, assign) NSInteger selectNum;
+
 @property (nonatomic, strong) UIView * superView;
 @property (nonatomic, assign) PanGestureDirection lastGestureDirecttion;
 @property (nonatomic, assign) PanGestureDirection gestureLock;

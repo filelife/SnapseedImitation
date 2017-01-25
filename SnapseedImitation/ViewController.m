@@ -15,29 +15,9 @@
 
 #define FilterCellWidth 120
 #define MoveZoom 20
-#define TabbarHeight 40
-NSString * const cellId = @"FilterCell";
 
-typedef NS_ENUM(NSInteger, ColorFilterType) {
-    SaturationFilter = 101,
-    BrightnessFilter,
-    ContrastFilter,
-    LightShadow
-};
-
-typedef NS_ENUM(NSInteger, FilterType) {
-    GaussianBlur = 201,
-    SepiaTone,
-    AffineTransform,
-    ModTransition
-};
-
-@interface ViewController () <SnapseedDropMenuDelegate,UICollectionViewDelegate, UICollectionViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate>{
+@interface ViewController () <SnapseedDropMenuDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate>{
     BOOL _change;
-    
-    UIActivityIndicatorView * _activityIndicator;
-    dispatch_queue_t _serialQueue;
-    CIFilter * _colorFilter;
 }
 
 @property (nonatomic, strong) CALayer * imgLayer;
@@ -49,8 +29,6 @@ typedef NS_ENUM(NSInteger, FilterType) {
 @property (nonatomic, strong) UILabel * selectFilterNameLab;
 @property (nonatomic, copy) NSArray<SnapseedDropMenuModel *> * colorFilterArray;
 @property (nonatomic, copy) NSArray * tabbarFilterArray;
-@property (nonatomic, strong) NSMutableArray<NSNumber *> * colorFilterValueArray;
-@property (nonatomic, strong) UICollectionView * collectionView;
 @property (nonatomic, strong) UIButton * leftbtn;
 @property (nonatomic, strong) UIButton * rightbtn;
 @property (nonatomic, strong) UIImagePickerController *picker;
@@ -58,10 +36,11 @@ typedef NS_ENUM(NSInteger, FilterType) {
 @property (nonatomic, strong) GPUImageExposureFilter * exposureFilter;
 @property (nonatomic, strong) GPUImageContrastFilter * constrastFilter;
 @property (nonatomic, strong) GPUImageHighlightShadowFilter * lightShadowFilter;
+@property (nonatomic, strong) GPUImageHighlightShadowFilter * highLightFilter;
 @property (nonatomic, strong) GPUImageFilterPipeline  * filterPipeline;
 @property (nonatomic, strong) GPUImagePicture * gpuOriginImage;
 @property (nonatomic, strong) GPUImageView * gpuimageView;
-
+@property (nonatomic, strong) NSMutableArray * filtersArray;
 @end
 
 @implementation ViewController
@@ -90,8 +69,6 @@ typedef NS_ENUM(NSInteger, FilterType) {
     _tipHud = [[MBProgressHUD alloc] initWithView:self.view];
     [self.view addSubview:_tipHud];
     
-    
-    
     self.leftbtn = [UIButton buttonWithType:UIButtonTypeCustom];
     self.leftbtn.frame = CGRectMake(0, 30, 100, 30);
     [self.leftbtn setTitle:@"Save" forState:UIControlStateNormal];
@@ -106,20 +83,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     [self.rightbtn addTarget:self action:@selector(openAlbum:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:self.rightbtn];
     
-    UICollectionViewFlowLayout * layout = [[UICollectionViewFlowLayout alloc]init];
-    layout.scrollDirection = UICollectionViewScrollDirectionVertical;
-    layout.itemSize = CGSizeMake(SCREEN_WIDTH / self.tabbarFilterArray.count - 20, TabbarHeight - 10);
     
-    self.collectionView = [[UICollectionView alloc]initWithFrame:CGRectMake(0, SCREEN_HEIGHT - TabbarHeight, SCREEN_WIDTH, TabbarHeight) collectionViewLayout:layout];
-    self.collectionView.delegate = self;
-    self.collectionView.dataSource = self;
-    [self.collectionView registerClass:[UICollectionViewCell class] forCellWithReuseIdentifier:cellId];
-    self.collectionView.backgroundColor = HEX_RGBA(0xdddddd,0.50);
-    self.collectionView.contentInset = UIEdgeInsetsMake(5, 10, 5, 10);
-    self.collectionView.scrollEnabled = YES;
-//    [self.view addSubview:self.collectionView];
-    
- 
     
     self.selectFilterNameLab = [[UILabel alloc]  initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, NAV_VIEW_HEIGHT + 30)];
     self.selectFilterNameLab.textColor = [UIColor whiteColor];
@@ -127,13 +91,10 @@ typedef NS_ENUM(NSInteger, FilterType) {
     self.selectFilterNameLab.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:self.selectFilterNameLab];
     
-    self.gestureView = [[UIView alloc]initWithFrame:CGRectMake(0, 60, SCREEN_WIDTH, self.collectionView.y - 60)];
-    
+    self.gestureView = [[UIView alloc]initWithFrame:CGRectMake(0, 60, SCREEN_WIDTH, SCREEN_HEIGHT)];
     [self.view addSubview:self.gestureView];
     
     //Snapseed menu
-    
-    _colorFilterValueArray = [NSMutableArray arrayWithCapacity:_colorFilterArray.count];
     CGPoint point = CGPointMake(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
     self.menu = [[SnapseedDropMenu alloc]initWithArray:self.colorFilterArray  viewCenterPoint:point inView:self.gestureView];
     self.menu.dropMenuDelegate = self;
@@ -144,36 +105,37 @@ typedef NS_ENUM(NSInteger, FilterType) {
 
 - (void) initData {
     _change = YES;
-    _serialQueue = dispatch_queue_create("com.gcd.concurrentQueue", DISPATCH_QUEUE_SERIAL);
-    _colorFilter = [CIFilter filterWithName:@"CIColorControls"];
-    [_colorFilter setDefaults];
-    
+ 
     SnapseedDropMenuModel * brightModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Bright" defaultValue:0 maxValue:1 minValue:-1];
     
     SnapseedDropMenuModel * constrastModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Constrast" defaultValue:1 maxValue:4 minValue:0];
     
     SnapseedDropMenuModel * exposureModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Exposure" defaultValue:1 maxValue:4 minValue:-2];
     
-    SnapseedDropMenuModel * shadowModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Shadow" defaultValue:0 maxValue:1 minValue:0];
+    SnapseedDropMenuModel * shadowModel = [[SnapseedDropMenuModel alloc]initWithTitle:@"Shadow" defaultValue:0 maxValue:4 minValue:0];
     
     SnapseedDropMenuModel * hightLightMolde = [[SnapseedDropMenuModel alloc]initWithTitle:@"HightLight" defaultValue:1 maxValue:1 minValue:0];
     
     self.colorFilterArray = @[brightModel,constrastModel,exposureModel,shadowModel,hightLightMolde];
     
-    
-    self.tabbarFilterArray = @[@"Gaussian",@"Old photo",@"Enlargement"];
-    
     self.brighterFilter = [[GPUImageBrightnessFilter alloc] init];
     self.constrastFilter = [[GPUImageContrastFilter alloc] init];
     self.exposureFilter = [[GPUImageExposureFilter alloc] init];
     self.lightShadowFilter = [[GPUImageHighlightShadowFilter alloc] init];
+    self.highLightFilter = [[GPUImageHighlightShadowFilter alloc] init];
     
-    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:[UIImage imageNamed:@"Duck.jpg"] smoothlyScaleOutput:YES];
+    
+    _filtersArray = [NSMutableArray arrayWithObjects:self.brighterFilter,self.constrastFilter,self.exposureFilter,self.lightShadowFilter,self.highLightFilter,nil];
+    
+    self.originImg = [UIImage imageNamed:@"Duck.jpg"];
+    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:self.originImg
+                                             smoothlyScaleOutput:YES];
     [self.gpuOriginImage processImage];
     [self.gpuOriginImage addTarget:self.brighterFilter];
     [self.gpuOriginImage addTarget:self.constrastFilter];
     [self.gpuOriginImage addTarget:self.exposureFilter];
     [self.gpuOriginImage addTarget:self.lightShadowFilter];
+    [self.gpuOriginImage addTarget:self.highLightFilter];
     
    
     // Pic
@@ -189,9 +151,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
     
     
     
-    NSArray * arrayTemp = @[self.brighterFilter,self.constrastFilter,self.exposureFilter,self.lightShadowFilter];
-    
-     self.filterPipeline = [[GPUImageFilterPipeline alloc]initWithOrderedFilters:arrayTemp input:self.gpuOriginImage output:_gpuimageView];
+    self.filterPipeline = [[GPUImageFilterPipeline alloc]initWithOrderedFilters:_filtersArray input:self.gpuOriginImage output:_gpuimageView];
     [_gpuOriginImage processImage];
 }
 
@@ -221,25 +181,32 @@ typedef NS_ENUM(NSInteger, FilterType) {
 
 - (void)saveEditImage {
     SEL selectorToCall = @selector(imageWasSavedSuccessfully:didFinishSavingWithError:contextInfo:);
-    UIGraphicsBeginImageContext(self.gpuimageView.frame.size);
-    
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    [self.gpuimageView.layer renderInContext:context];
-    
-    UIImage* tImage = UIGraphicsGetImageFromCurrentImageContext();
-    
-    UIGraphicsEndImageContext();
-    [self.gpuOriginImage processImage];
-    
-    [self.gpuOriginImage useNextFrameForImageCapture];
-    UIImage * saveImage = [self.filterPipeline currentFilteredFrame];
+    UIImage * saveImage = [self createFinalImage];
     UIImageWriteToSavedPhotosAlbum(saveImage, self,selectorToCall, NULL);
+}
+
+- (UIImage *)createFinalImage{
+    [self showLoadingTips];
+    UIImage * currentImage;
+    GPUImagePicture * temp = [[GPUImagePicture alloc]initWithImage:self.originImg];
+    for(GPUImageFilter * filter in self.filtersArray) {
+        [temp addTarget:filter];
+        [temp processImage];
+        [filter useNextFrameForImageCapture];
+        currentImage = [filter imageFromCurrentFramebuffer];
+        if(!currentImage) {
+            break;
+        } else {
+            temp = [[GPUImagePicture alloc]initWithImage:currentImage];
+        }
+    }
+    return currentImage;
 }
 
 #pragma mark UIImagePicker Delegate
 
 - (void) imageWasSavedSuccessfully:(UIImage *)paramImage didFinishSavingWithError:(NSError *)paramError contextInfo:(void *)paramContextInfo{
+    [self dismissLoadingTips];
     if (paramError == nil){
         [self showTextTips:@"Saving successfully"];
         NSLog(@"Image was saved successfully.");
@@ -292,51 +259,6 @@ typedef NS_ENUM(NSInteger, FilterType) {
 }
 
 
-#pragma mark CollectionView Delegate
-
--(NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView{
-    return 1;
-}
-
--(NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
-    return self.tabbarFilterArray.count;
-}
-
--(UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath{
-    UICollectionViewCell * cell  = [collectionView dequeueReusableCellWithReuseIdentifier:cellId forIndexPath:indexPath];
-    cell.backgroundColor = HEX_RGBA(0x000000,0.80);
-    [cell.contentView removeAllSubviews];
-    UILabel * lab = [[UILabel alloc] initWithFrame:CGRectMake(5, 5, cell.width - 5,12)];
-    lab.text = [self.tabbarFilterArray objectAtIndex:indexPath.row];
-    lab.font = [UIFont fontWithName:@"Helvetica-Bold" size:12];;
-    lab.textAlignment = NSTextAlignmentLeft;
-    lab.textColor = [UIColor whiteColor];
-    [cell addSubview:lab];
-    return cell;
-}
-
-- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
-    if(_change) {
-        dispatch_async(_serialQueue,^{
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self showLoadingTips];
-            });
-//            UIImage * img = [self setFilter:(FilterType)(indexPath.row + 201)];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                
-                [self dismissLoadingTips];
-            });
-        });
-    } else {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            
-        });
-    }
-    _change = !_change;
-}
-
-
-
 #pragma mark SnapseedDropMenu Delegate
 - (void)snapseedDropMenu:(SnapseedDropMenu *)sender didSelectCellAtIndex:(NSInteger)index value:(CGFloat)value{
     SnapseedDropMenuModel * model = [self.colorFilterArray objectAtIndex:index];
@@ -360,6 +282,7 @@ typedef NS_ENUM(NSInteger, FilterType) {
 #pragma mark - Filter
 
 - (void)randerImageWithFilter:(NSInteger)index value:(CGFloat)value{
+    
     
     switch (index) {
         case 0: {
@@ -399,10 +322,10 @@ typedef NS_ENUM(NSInteger, FilterType) {
             }
         } break;
         case 4: {
-            if(_lightShadowFilter) {
-                _lightShadowFilter.highlights = value;
+            if(self.highLightFilter) {
+                self.highLightFilter.highlights = value;
                 [_gpuOriginImage processImage];
-                [_lightShadowFilter useNextFrameForImageCapture];
+                [self.highLightFilter useNextFrameForImageCapture];
 //                self.imageView.image = [_lightShadowFilter imageFromCurrentFramebuffer];
             }
         }
@@ -410,121 +333,11 @@ typedef NS_ENUM(NSInteger, FilterType) {
             break;
     }
    
-    
-    
- 
-    
-    
-}
-
--(void)showAllFilters{
-    NSArray *filterNames=[CIFilter filterNamesInCategory:kCICategoryBuiltIn];
-    for (NSString *filterName in filterNames) {
-        CIFilter *filter=[CIFilter filterWithName:filterName];
-        NSLog(@"\rfilter:%@\rattributes:%@",filterName,[filter attributes]);
-    }
-}
-
-- (UIImage *)setColorFilter:(CGFloat)value filterType:(ColorFilterType)type{
-    if(_colorFilter == nil) {
-        return nil;
-    }
-    switch (type) {
-        case SaturationFilter:
-        {
-            CGFloat finalValue = 1 + value / 100;
-            [_colorFilter setValue:[NSNumber numberWithFloat:finalValue] forKey:@"inputSaturation"];
-        }
-            break;
-        case BrightnessFilter:
-        {
-            CGFloat finalValue = value / 100;
-            [_colorFilter setValue:[NSNumber numberWithFloat:finalValue] forKey:@"inputBrightness"];
-        }
-            break;
-        case ContrastFilter:
-        {
-            CGFloat finalValue = 1 + value / 100;
-            [_colorFilter setValue:[NSNumber numberWithFloat:finalValue] forKey:@"inputContrast"];
-        }
-            break;
-        case LightShadow:
-            break;
-        default:
-        {
-            return nil;
-        }
-    }
-    CIImage * inputImage;
-    @autoreleasepool {
-        NSData *imageData = UIImagePNGRepresentation(self.originImg);
-        inputImage = [CIImage imageWithData:imageData];
-        imageData = nil;
-        
-    }
-    [_colorFilter setValue:inputImage forKey:@"inputImage"];
-    return [self useFilter:_colorFilter toCreateImageWiehCIImage:inputImage];
 }
 
 
-- (UIImage *)setFilter :(FilterType) type{
-    UIImage * resImage;
-    __weak id weakSelf = self;
-    @autoreleasepool {
-        
-        NSData *imageData = UIImagePNGRepresentation(((ViewController *)weakSelf).originImg);
-        CIImage * inputImage = [CIImage imageWithData:imageData];
-        CIFilter * filter;
-        switch (type) {
-            case GaussianBlur: {
-                filter = [CIFilter filterWithName:@"CIGaussianBlur"
-                                    keysAndValues:@"inputRadius",@50,
-                                                  @"inputImage",inputImage,nil];
-            }
-                break;
-            case SepiaTone: {
-                filter = [CIFilter filterWithName:@"CISepiaTone"
-                                    keysAndValues:@"inputIntensity",@0.9,
-                                                  @"inputImage", inputImage,nil];
-            }
-                break;
-            case AffineTransform: {
-//                CGFloat width = self.imageView.image.size.width;
-//                CGAffineTransform trans = CGAffineTransformMake(3, 0, 0, 3, - width,  - width);
-//                filter = [CIFilter filterWithName:@"CIAffineTransform"
-//                                    keysAndValues:@"inputImage",inputImage,
-//                                                  @"inputTransform",[NSValue valueWithCGAffineTransform:trans],nil];
-            }
-                break;
-            case ModTransition: {
-                filter = [CIFilter filterWithName: @"CIModTransition"
-                                    keysAndValues: @"inputCenter",[CIVector vectorWithX:0.5*((ViewController *)weakSelf).originImg.size.width Y:0.5 * ((ViewController *)weakSelf).originImg.size.height],
-                                                   @"inputAngle", @(M_PI*0.1),
-                                                   @"inputRadius", @30.0,
-                                                   @"inputCompression", @10.0,
-                                                   @"inputImage",inputImage,
-                                                   nil];
-            }
-                break;
-            default:
-                break;
-        }
-        
-        resImage = [self useFilter:filter toCreateImageWiehCIImage:inputImage];
-        inputImage = nil;
-        imageData = nil;
-    }
-    return resImage;
-}
 
-- (UIImage * )useFilter:(CIFilter *)filter toCreateImageWiehCIImage:(CIImage*)inputImage {
-    CIContext * ciContext = [CIContext contextWithOptions:nil];
-    CGImageRef cgImage = [ciContext createCGImage:filter.outputImage fromRect:inputImage.extent];
-    UIImage * resImage = [UIImage imageWithCGImage:cgImage];
-    CGImageRelease(cgImage);
-    [ciContext clearCaches];
-    return resImage;
-}
+
 
 
 #pragma mark - HUD
