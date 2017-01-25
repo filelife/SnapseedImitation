@@ -159,6 +159,9 @@
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Message" message:@"Save photo?" preferredStyle:(UIAlertControllerStyleAlert)];
     
     UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"YES" style:(UIAlertActionStyleDefault) handler:^(UIAlertAction *action) {
+        
+        [self showLoadingTips];
+        
         [self saveEditImage];
     }];
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:(UIAlertActionStyleCancel) handler:^(UIAlertAction *action) {
@@ -178,7 +181,7 @@
 }
 
 - (UIImage *)createFinalImage{
-    [self showLoadingTips];
+    
     UIImage * currentImage;
     GPUImagePicture * temp = [[GPUImagePicture alloc]initWithImage:self.originImg];
     for(GPUImageFilter * filter in self.filtersArray) {
@@ -197,7 +200,9 @@
 
 #pragma mark UIImagePicker Delegate
 
-- (void) imageWasSavedSuccessfully:(UIImage *)paramImage didFinishSavingWithError:(NSError *)paramError contextInfo:(void *)paramContextInfo{
+- (void) imageWasSavedSuccessfully:(UIImage *)paramImage
+          didFinishSavingWithError:(NSError *)paramError
+                       contextInfo:(void *)paramContextInfo {
     [self dismissLoadingTips];
     if (paramError == nil){
         [self showTextTips:@"Saving successfully"];
@@ -207,6 +212,8 @@
         NSLog(@"An error happened while saving the image.");
         NSLog(@"Error = %@", paramError);
     }
+    
+    
 }
 
 
@@ -332,10 +339,12 @@
 #pragma mark - HUD
 
 - (void)showTextTips:(NSString *)tips {
-    [MBProgressHUD hideHUDForView:self.view animated:NO];
-    [self.view addSubview:_tipHud];
-    [self.view bringSubviewToFront:_tipHud];
-    
+    if(!_tipHud) {
+        _tipHud = [[MBProgressHUD alloc] initWithView:[UIApplication sharedApplication].keyWindow];
+    }
+    [MBProgressHUD hideHUDForView:[UIApplication sharedApplication].keyWindow animated:NO];
+    [[UIApplication sharedApplication].keyWindow addSubview:_tipHud];
+    [[UIApplication sharedApplication].keyWindow bringSubviewToFront:_tipHud];
     _tipHud.mode = MBProgressHUDModeText;
     _tipHud.labelText = tips;
     [_tipHud show:YES];
@@ -343,13 +352,16 @@
 }
 
 - (void)showLoadingTips {
-    [MBProgressHUD hideHUDForView:self.view animated:NO];
-    [self.view addSubview:_tipHud];
-    [self.view bringSubviewToFront:_tipHud];
-    
+    if(!_tipHud) {
+        _tipHud = [[MBProgressHUD alloc] initWithView:[UIApplication sharedApplication].keyWindow];
+    }
+    [MBProgressHUD hideHUDForView:[UIApplication sharedApplication].keyWindow animated:NO];
+    [[UIApplication sharedApplication].keyWindow addSubview:_tipHud];
+    [[UIApplication sharedApplication].keyWindow bringSubviewToFront:_tipHud];
     _tipHud.labelText = nil;
     _tipHud.mode = MBProgressHUDModeIndeterminate;
     [_tipHud show:YES];
+
 }
 
 - (void)dismissLoadingTips {
