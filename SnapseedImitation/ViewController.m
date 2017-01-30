@@ -123,8 +123,16 @@
     _filtersArray = [NSMutableArray arrayWithObjects:self.brighterFilter,self.constrastFilter,self.exposureFilter,self.lightShadowFilter,self.highLightFilter,nil];
     
     self.originImg = [UIImage imageNamed:@"Duck.jpg"];
-    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:self.originImg
+    
+    [self initImageVIew:self.originImg];
+    
+   
+}
+
+- (void)initImageVIew:(UIImage *)image {
+    self.gpuOriginImage = [[GPUImagePicture alloc] initWithImage:image
                                              smoothlyScaleOutput:YES];
+    
     [self.gpuOriginImage processImage];
     [self.gpuOriginImage addTarget:self.brighterFilter];
     [self.gpuOriginImage addTarget:self.constrastFilter];
@@ -132,19 +140,18 @@
     [self.gpuOriginImage addTarget:self.lightShadowFilter];
     [self.gpuOriginImage addTarget:self.highLightFilter];
     
-    
-    self.previewImageView = [[GPUImageView alloc] initWithFrame:CGRectZero];
-    self.previewImageView.width = SCREEN_WIDTH - 30;
-    self.previewImageView.height = SCREEN_HEIGHT / 3 * 2;
-    self.previewImageView.contentMode = UIViewContentModeScaleAspectFit;
-    self.previewImageView.centerX = SCREEN_WIDTH / 2;
-    self.previewImageView.y = SCREEN_HEIGHT / 6;
-    [self.view addSubview:self.previewImageView];
-    
-    
-    
+    if(self.previewImageView == nil) {
+        self.previewImageView = [[GPUImageView alloc] initWithFrame:CGRectZero];
+        self.previewImageView.width = SCREEN_WIDTH - 30;
+        self.previewImageView.height = SCREEN_HEIGHT / 3 * 2;
+        self.previewImageView.contentMode = UIViewContentModeScaleAspectFit;
+        self.previewImageView.centerX = SCREEN_WIDTH / 2;
+        self.previewImageView.y = SCREEN_HEIGHT / 6;
+        [self.view addSubview:self.previewImageView];
+    }
     self.filterPipeline = [[GPUImageFilterPipeline alloc]initWithOrderedFilters:_filtersArray input:self.gpuOriginImage output:_previewImageView];
     [_gpuOriginImage processImage];
+    
 }
 
 #pragma mark button action block
@@ -245,8 +252,7 @@
     __weak UIImage * pickerImg = [info objectForKey:UIImagePickerControllerEditedImage];
     self.originImg = pickerImg;
     
-    
-    
+    [self initImageVIew:self.originImg];
     //Compression Quality
 //    NSData *dataEdited = UIImageJPEGRepresentation(self.imageView.image, 0.3);
     [_picker dismissViewControllerAnimated:YES completion:nil];
