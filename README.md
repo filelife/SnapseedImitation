@@ -1,5 +1,6 @@
 # SnapseedImitation
 ## App of imitation SnapSeed.
+Base on GPUImage framework.
 
 The use of dropmenu is like snapseed.
 
@@ -13,7 +14,7 @@ UI:
 
 Edit Photo
 
-<img src="http://p1.bpimg.com/567571/5724739983b0d1a1.jpg" width = "50%"/>
+<img src="http://i1.piimg.com/567571/084d868762e89302.png" width = "50%"/>
 
 Gaussian Blur filter:
 
