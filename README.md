@@ -1,7 +1,7 @@
 # SnapseedImitation
 ## App of imitation SnapSeed.
 ### 0.Repository introduction.
-Base on GPUImage framework,support some photo edit operation.
+Base on GPUImage framework,support some picture editing operation.
 
 The same drop menu user interface as Snapseed.
 
@@ -11,7 +11,7 @@ UI:
  
 <img src="http://p1.bpimg.com/567571/f1e3172f0464087d.png" width = "50%"/>
 
-Edit Photo
+Editing picture
 
 <img src="http://i1.piimg.com/567571/084d868762e89302.png" width = "50%"/>
 
@@ -19,7 +19,7 @@ Gaussian Blur filter:
 
 <img src="http://p1.bpimg.com/567571/873abae03f6b9d44.png" width = "30%"/>
 
-Old photo filter:
+Old picture filter:
 
 <img src="http://p1.bpimg.com/567571/7371f08323ea477d.png" width = "30%"/>
 
@@ -33,7 +33,7 @@ pod 'GPUImage'
 
 ### 2.Useing GPUImage
 ### 1.Process description
-###### Use GPUImagePicture category to get photo.Render a frame with filters by GPUImageFilter category.Notice by pipline when it render finish.Finally we can show edited photo in GPUImageView,or maybe we can get photo by GPUImageFilter.
+###### Use GPUImagePicture category to get picture.Render a frame with filters by GPUImageFilter category.Notice by pipline when it render finish.Finally we can show edited photo in GPUImageView,or maybe we can get picture by GPUImageFilter.
 
 ```
 graph LR
@@ -65,7 +65,7 @@ GPUImageFilter-->GPUImageOutput;
 ###### Users have different filter options when editing pictures.This may requires control of brightness, contrast, and exposure.Every time we add a filter, the picture renders once, which means we lose the original image if we render twice. This is why we need to do multiple filters but make it render for only one time.
 
 ###### All we need is GPUImageFilterPipeline category.
-###### GPUImageFilterPipeline can import multi filters but rendering once. After many times of rendering,we still can get origin picture.
+###### GPUImageFilterPipeline can do multi filters but only one-time rendering . After many times of adding filters,we can still get origin picture.
 
 ###### Example：
 ```
