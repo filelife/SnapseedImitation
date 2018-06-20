@@ -7,21 +7,7 @@ The same drop menu user interface as Snapseed.
 
 Can beauty user's photograph with different filters.
 
-UI:
- 
-<img src="http://p1.bpimg.com/567571/f1e3172f0464087d.png" width = "50%"/>
 
-Editing picture
-
-<img src="http://i1.piimg.com/567571/084d868762e89302.png" width = "50%"/>
-
-Gaussian Blur filter:
-
-<img src="http://p1.bpimg.com/567571/873abae03f6b9d44.png" width = "30%"/>
-
-Old picture filter:
-
-<img src="http://p1.bpimg.com/567571/7371f08323ea477d.png" width = "30%"/>
 
 ### 1.Import GPUImage
 CocoaPods
@@ -59,7 +45,7 @@ GPUImageFilter-->GPUImageOutput;
     UIImage *image = [stretchDistortionFilter imageFromCurrentFramebuffer];
 ```
 ###### Impression comparison  :
-![](http://i1.piimg.com/567571/09cbdd9243e6da17.png)
+![](https://upload-images.jianshu.io/upload_images/1647887-507c937ab8882497.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
 
 #### 2. Multiple Filter
 ###### Users have different filter options when editing pictures.This may requires control of brightness, contrast, and exposure.Every time we add a filter, the picture renders once, which means we lose the original image if we render twice. This is why we need to do multiple filters but make it render for only one time.
@@ -88,9 +74,9 @@ GPUImageFilter-->GPUImageOutput;
     [stretchDistortionFilter useNextFrameForImageCapture];
     UIImage * image = [self.pipLine currentFilteredFrame];
 ```
-![](http://i1.piimg.com/567571/679834edceb5cc12.png)
+![](https://upload-images.jianshu.io/upload_images/1647887-2ed90da3be4de5b5.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
 ###### 
 #### 3.Multiple Filter use in the app demo.
 ###### With the drop menu,user can edit photo with different filters,and the
-![](http://i1.piimg.com/567571/084d868762e89302.png)
+![](https://upload-images.jianshu.io/upload_images/1647887-5fa6719ff2f7ca52.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/414)
 ## 
